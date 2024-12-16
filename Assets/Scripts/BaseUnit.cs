@@ -161,7 +161,7 @@ public class BaseUnit : MonoBehaviour
         Node startNode = new(startPos, endPos, null);
         Node endNode = new(endPos, endPos, null);
         
-        openSet.Enqueue(startNode, startNode.gCost);
+        openSet.Enqueue(startNode, startNode.GCost);
         openSetCoords.Add(startNode.NodePosition);
         int count = 0;
 
@@ -191,15 +191,15 @@ public class BaseUnit : MonoBehaviour
             List<Node> neighbors = currentNode.FindNeighbors();
             foreach (var neighbor in neighbors)
             {
-                if (currentNode.fCost + 10 <= neighbor.fCost &&
+                if (currentNode.FCost + 10 <= neighbor.FCost &&
                     grid[(int)neighbor.NodePosition.x, (int)neighbor.NodePosition.y].name ==
                     "EmptyNode" &&
                     !openSetCoords.Contains(neighbor.NodePosition)
                    )
                 {
-                    openSet.Enqueue(neighbor, neighbor.gCost);
+                    openSet.Enqueue(neighbor, neighbor.GCost);
                     openSetCoords.Add(neighbor.NodePosition);
-                    Debug.Log($"Adding {neighbor.NodePosition} with cost {neighbor.gCost}");
+                    Debug.Log($"Adding {neighbor.NodePosition} with cost {neighbor.GCost}");
                     Debug.Log($"Open set count: {openSet.Count}");
                 }
                 else if (!closedSet.Contains(neighbor.NodePosition))
@@ -208,7 +208,7 @@ public class BaseUnit : MonoBehaviour
                 }
 
                 Debug.Log(
-                    $"Current {currentNode.NodePosition}, {currentNode.fCost} vs Neighbour {neighbor.NodePosition}, {neighbor.fCost}");
+                    $"Current {currentNode.NodePosition}, {currentNode.FCost} vs Neighbour {neighbor.NodePosition}, {neighbor.FCost}");
             }
 
             closedSet.Add(currentNode.NodePosition);

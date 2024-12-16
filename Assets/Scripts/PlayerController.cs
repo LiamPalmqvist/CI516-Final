@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Class <c>PlayerController</c> models a player controller for the camera
+/// </summary>
 public class PlayerController : MonoBehaviour
 {
     public int speed = 10;
@@ -36,6 +39,9 @@ public class PlayerController : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// Function <f>CameraMove</f> allows for the movement of the camera
+    /// </summary>
     private void CameraMove()
     {
         // float xSpeed;
