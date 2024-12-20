@@ -75,12 +75,6 @@ public class TeamClass : MonoBehaviour
         
         //sceneController.PrintUnitPositions();
     }
-
-    // This is called every frame
-    private void Update()
-    {
-        throw new NotImplementedException();
-    }
     
     // from https://discussions.unity.com/t/how-to-find-a-child-gameobject-by-name/31255/2
     static public GameObject GetChildGameObject(GameObject fromGameObject, string withName) {

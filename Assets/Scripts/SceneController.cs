@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,6 +15,7 @@ public class SceneController : MonoBehaviour
 {
     // Variables
     public GameObject[,] Grid = new GameObject[100, 100]; 
+    public int[,] gridInt = new int[100, 100];
     // switch this to a GameObject[,]
     // Have empty fields be empty node Objects - blocks be Obstacle GameObjects
     // Maybe try to generate a mesh based on where empty spots are?
@@ -62,6 +64,8 @@ public class SceneController : MonoBehaviour
 
         //SpawnObstacles();
         //SpawnTeams();
+        //int[][] map1 = GenerateMap();
+        // SpawnFromMap(maps.map2);
         SpawnFromMap(maps.map2);
     }
 
@@ -104,12 +108,14 @@ public class SceneController : MonoBehaviour
                         obstacle.transform.position = new Vector3(x, 1f, y);
                         obstacles.Add(obstacle);
                         Grid[y, x] = obstacle;
+                        gridInt[y, x] = 0;
                         break;
-                    case 1:
-                        Grid[y, x] = Instantiate(emptyObstacle);
-                        Grid[y, x].name = "EmptyNode";
-                        Grid[y, x].transform.position = new Vector3(x, 1f, y);
-                        break;
+                    // case 1:
+                    //     Grid[y, x] = Instantiate(emptyObstacle);
+                    //     Grid[y, x].name = "EmptyNode";
+                    //     Grid[y, x].transform.position = new Vector3(x, 1f, y);
+                    //     gridInt[y, x] = 1;
+                    //     break;
                     case 2:
                         GameObject team = Instantiate(teamPrefab);
                         team.name = $"{teamColourNames[teamNumber]}";
@@ -121,6 +127,7 @@ public class SceneController : MonoBehaviour
                         
                         activeTeams.Add(team);
                         Grid[y, x] = team;
+                        gridInt[y, x] = 2;
                         //team.gameObject.SetActive(false);
                         //Instantiate(team);
                         //Debug.Log($"{teamColourNames[teamNumber]} position is at {x}, {y}");
@@ -176,7 +183,7 @@ public class SceneController : MonoBehaviour
         Vector3 newPos = new Vector3(newX, 1f, newZ);
 
         // Check if position is empty
-        if (Grid[newZ, newX].name == "EmptyNode")
+        if (Grid[newZ, newX] == null)
         {
             Grid[newZ, newX] = insertedObject;
             Debug.Log($"Set {newZ}, {newX} to {insertedObject.name}");
@@ -192,19 +199,19 @@ public class SceneController : MonoBehaviour
         return newPos;
     }
 
-    public void PrintUnitPositions()
-    {
-        for (int i = 0; i < 100; i++)
-        {
-            for (int j = 0; j < 100; j++)
-            {
-                if (Grid[i, j].name == "EntityPrefab(Clone)")
-                {
-                    Debug.Log($"Found {Grid[i, j].name} at position {i}, {j}");
-                }
-            }
-        }
-    }
+    // public void PrintUnitPositions()
+    // {
+    //     for (int i = 0; i < 100; i++)
+    //     {
+    //         for (int j = 0; j < 100; j++)
+    //         {
+    //             if (Grid[i, j].name == "EntityPrefab(Clone)")
+    //             {
+    //                 Debug.Log($"Found {Grid[i, j].name} at position {i}, {j}");
+    //             }
+    //         }
+    //     }
+    // }
 
     private void GetPlayerMousePosition()
     {
@@ -227,7 +234,7 @@ public class SceneController : MonoBehaviour
                     if (Grid[(int)hitPoint.z, (int)hitPoint.x].name == "EntityPrefab(Clone)")
                     {
                         GameObject foundObject = Grid[(int)hitPoint.z, (int)hitPoint.x];
-                        Debug.Log($"Found {foundObject.name} at position {hitPoint.x}, {hitPoint.z}");
+                        // Debug.Log($"Found {foundObject.name} at position {hitPoint.x}, {hitPoint.z}");
                         activeSpinner.SetActive(true);
                         activeSpinnerControl.SetSpinner(true);
                         spinnerControl.SetSpinner(true);
@@ -250,11 +257,37 @@ public class SceneController : MonoBehaviour
                     BaseUnit unit = assignedObject.GetComponent<BaseUnit>();
                     activeSpinnerControl.SetSpinner(false);
                     activeSpinner.SetActive(false);
-                    unit.AStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
+                    // unit.AStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
+                    //StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), gridInt));
+                    unit._path2 = unit.pathFinder.CalculatePath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x));
+                    // unit.StartAStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
                 }
             }
         }
     }
+
+    // private int[][] GenerateMap()
+    // {
+    //     Random random = new Random();
+    //     int[][] map = new int[100][];
+    //     for (int i = 0; i < 100; i++)
+    //     {
+    //         for (int j = 0; j < 100; j++)
+    //         {
+    //             map[i][j] = random.Next(0, 1);
+    //         }
+    //     }
+    //
+    //     for (int i = 0; i < map.Length; i++)
+    //     {
+    //         for (int j = 0; j < map[i].Length; j++)
+    //         {
+    //             Debug.Log(map[i][j]);
+    //         }
+    //     }
+    //
+    //     return map;
+    // }
 
     /*
     public void SpawnObstacles()
