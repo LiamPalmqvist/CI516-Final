@@ -1,21 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using UnityEditor.UIElements;
 using UnityEngine;
-using Utils;
 using Random = System.Random;
 
 public class SceneController : MonoBehaviour
 {
     // Variables
     public GameObject[,] Grid = new GameObject[100, 100]; 
-    public int[,] gridInt = new int[100, 100];
     // switch this to a GameObject[,]
     // Have empty fields be empty node Objects - blocks be Obstacle GameObjects
     // Maybe try to generate a mesh based on where empty spots are?
@@ -35,9 +26,8 @@ public class SceneController : MonoBehaviour
 
     [Header("Obstacles")]
     public GameObject obstaclePrefab;
-    public int obstacleCount = 0;
+    // public int obstacleCount = 0;
     public List<GameObject> obstacles = new List<GameObject>();
-    public GameObject emptyObstacle;
     
     // Map elements from Maps.cs
     Maps maps;
@@ -108,7 +98,6 @@ public class SceneController : MonoBehaviour
                         obstacle.transform.position = new Vector3(x, 1f, y);
                         obstacles.Add(obstacle);
                         Grid[y, x] = obstacle;
-                        gridInt[y, x] = 0;
                         break;
                     // case 1:
                     //     Grid[y, x] = Instantiate(emptyObstacle);
@@ -127,7 +116,6 @@ public class SceneController : MonoBehaviour
                         
                         activeTeams.Add(team);
                         Grid[y, x] = team;
-                        gridInt[y, x] = 2;
                         //team.gameObject.SetActive(false);
                         //Instantiate(team);
                         //Debug.Log($"{teamColourNames[teamNumber]} position is at {x}, {y}");
@@ -257,11 +245,7 @@ public class SceneController : MonoBehaviour
                     BaseUnit unit = assignedObject.GetComponent<BaseUnit>();
                     activeSpinnerControl.SetSpinner(false);
                     activeSpinner.SetActive(false);
-                    // unit.AStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
                     StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid));
-                    //StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), gridInt));
-                    //unit._path2 = unit.pathFinder.CalculatePath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x));
-                    // unit.StartAStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
                 }
             }
         }
@@ -289,45 +273,4 @@ public class SceneController : MonoBehaviour
     //
     //     return map;
     // }
-
-    /*
-    public void SpawnObstacles()
-    {
-        for (int i = 0; i < obstacleCount; i++)
-        {
-            GameObject obstacle = Instantiate(obstaclePrefab);
-
-            int randomX = UnityEngine.Random.Range(0, 100);
-            int randomY = UnityEngine.Random.Range(0, 100);
-
-            obstacle.transform.position = FindOpenPosition(0, new Vector2(randomX, randomY), 0, 1);
-        }
-    }
-
-
-    public void SpawnTeams()
-    {
-        for (int i = 0; i < teams.Length; i++)
-        {
-            GameObject team = teams[i];
-            team.GetComponent<TeamClass>().spawnCoords = teamPositions[i];
-            team.GetComponent<TeamClass>().teamNumber = i;
-            team.GetComponent<TeamClass>().teamColour = teamColors[i];
-            team.gameObject.tag = $"{i}";
-            Instantiate(team);
-        }
-    }
-    
-    //https://stackoverflow.com/questions/3514740/how-to-split-an-array-into-a-group-of-n-elements-each
-    public int[][] SplitArray(int[] array, int length)
-    {
-       int i = 0;
-       var query = from s in array
-           let num = i++
-           group s by num / length
-           into g
-           select g.ToArray();
-       return query.ToArray();
-    }
-    */
 }

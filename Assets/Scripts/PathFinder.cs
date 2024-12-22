@@ -11,9 +11,9 @@ public class PathFinder : MonoBehaviour
     //public SceneController sceneController => GameObject.Find("SceneController").GetComponent<SceneController>();
 
     // Node sets
-    public List<Node2> openSet = new();
-    public List<Node2> closedSet = new();
-    public List<Node2> path = new();
+    public List<Node> openSet = new();
+    public List<Node> closedSet = new();
+    public List<Node> path = new();
     
     // Positions
     public Vector2 startPosition;
@@ -33,21 +33,7 @@ public class PathFinder : MonoBehaviour
         endPosition = Vector2.zero;
     }
 
-    public bool PathComplete() => !path.Any();
-
-    public Vector2 GetNextPathNode()
-    {
-        if (path.Any())
-        {
-            Vector2 position = path[0].nodePosition;
-            path.RemoveAt(0);
-            return position;
-        }
-        // (else)
-        return new Vector2(-1, -1);
-    }
-
-    public List<Node2> CalculatePath(Vector2 start, Vector2 target, GameObject[,] grid)
+    public List<Node> CalculatePath(Vector2 start, Vector2 target, GameObject[,] grid)
     {
         Clear();
 
@@ -57,7 +43,7 @@ public class PathFinder : MonoBehaviour
 
         if (CheckValidSpace(target, grid))
         {
-            Node2 currentNode = new(start, target, null);
+            Node currentNode = new(start, target, null);
             closedSet.Add(currentNode);
             openSet.AddRange(GetNeighbours(currentNode, grid));
             // Create starting node, add to closedSet
@@ -68,7 +54,7 @@ public class PathFinder : MonoBehaviour
             //for (int i = 1; i <= 1000 && openSet.Count > 0; i++)
             {
                 iterations ++;
-                foreach (Node2 node in openSet)
+                foreach (Node node in openSet)
                 {
                     if (closedSet.Contains(currentNode) || node.fCost < currentNode.fCost) currentNode = node;
                 }
@@ -79,7 +65,7 @@ public class PathFinder : MonoBehaviour
                 if (currentNode.nodePosition == endPosition)
                 {
                     // Path found
-                    Node2 pathNode = currentNode;
+                    Node pathNode = currentNode;
                     path = Retrace(pathNode);
                 }
                 else
@@ -95,11 +81,11 @@ public class PathFinder : MonoBehaviour
         return path;
     }
 
-    private List<Node2> Retrace(Node2 finalNode)
+    private List<Node> Retrace(Node finalNode)
     {
         
-        List<Node2> retracedPath = new();
-        Node2 pathNode = finalNode;
+        List<Node> retracedPath = new();
+        Node pathNode = finalNode;
         while (pathNode.Parent != null)
         {
             //Debug.Log("Making openSet nodes");
@@ -109,19 +95,19 @@ public class PathFinder : MonoBehaviour
         }
         retracedPath.Reverse();
 
-        // foreach (Node2 node in retracedPath)
+        // foreach (Node node in retracedPath)
         // {
         //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
         //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.green);
         // }
         //
-        // foreach (Node2 node in openSet)
+        // foreach (Node node in openSet)
         // {
         //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
         //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.blue);
         // }
         //
-        // foreach (Node2 node in closedSet)
+        // foreach (Node node in closedSet)
         // {
         //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
         //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.red);
@@ -132,10 +118,10 @@ public class PathFinder : MonoBehaviour
         return retracedPath;
     }
 
-    private List<Node2> GetNeighbours(Node2 origin, GameObject[,] grid)
+    private List<Node> GetNeighbours(Node origin, GameObject[,] grid)
     {
-        List<Node2> neighbours = new();
-        List<Node2> all = new();
+        List<Node> neighbours = new();
+        List<Node> all = new();
         
         all.AddRange(closedSet);
         all.AddRange(openSet);
@@ -154,11 +140,11 @@ public class PathFinder : MonoBehaviour
                 // Check if the new position is valid
                 if (CheckValidSpace(newPos, grid))
                 {
-                    Node2 existingNode = null;
+                    Node existingNode = null;
                     existingNode = all.Find(node => node.nodePosition == newPos);
                     if (existingNode == null)
                     {
-                        Node2 newNode = new(newPos, endPosition, origin);
+                        Node newNode = new(newPos, endPosition, origin);
                         neighbours.Add(newNode);
                         
                         // Debug.Log($"{newPos} HCost: {newNode.hCost}");
