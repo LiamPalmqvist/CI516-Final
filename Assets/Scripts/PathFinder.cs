@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 public class PathFinder : MonoBehaviour
 {
     // Game Manager
-    public SceneController sceneController => GameObject.Find("SceneController").GetComponent<SceneController>();
+    //public SceneController sceneController => GameObject.Find("SceneController").GetComponent<SceneController>();
 
     // Node sets
     public List<Node2> openSet = new();
@@ -47,7 +47,7 @@ public class PathFinder : MonoBehaviour
         return new Vector2(-1, -1);
     }
 
-    public List<Node2> CalculatePath(Vector2 start, Vector2 target)
+    public List<Node2> CalculatePath(Vector2 start, Vector2 target, GameObject[,] grid)
     {
         Clear();
 
@@ -55,11 +55,11 @@ public class PathFinder : MonoBehaviour
         endPosition = target;
         int iterations = 0;
 
-        if (CheckValidSpace(target))
+        if (CheckValidSpace(target, grid))
         {
             Node2 currentNode = new(start, target, null);
             closedSet.Add(currentNode);
-            openSet.AddRange(GetNeighbours(currentNode));
+            openSet.AddRange(GetNeighbours(currentNode, grid));
             // Create starting node, add to closedSet
             // add currentNode's neighbours to openSet
 
@@ -84,7 +84,7 @@ public class PathFinder : MonoBehaviour
                 }
                 else
                 {
-                    openSet.AddRange(GetNeighbours(currentNode));
+                    openSet.AddRange(GetNeighbours(currentNode, grid));
                 }
             }
             
@@ -109,30 +109,30 @@ public class PathFinder : MonoBehaviour
         }
         retracedPath.Reverse();
 
-        foreach (Node2 node in retracedPath)
-        {
-            nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-            nodeRef.GetComponent<NodeVisualiser>().Init(Color.green);
-        }
-        
-        foreach (Node2 node in openSet)
-        {
-            nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-            nodeRef.GetComponent<NodeVisualiser>().Init(Color.blue);
-        }
-        
-        foreach (Node2 node in closedSet)
-        {
-            nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-            nodeRef.GetComponent<NodeVisualiser>().Init(Color.red);
-        }
+        // foreach (Node2 node in retracedPath)
+        // {
+        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
+        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.green);
+        // }
+        //
+        // foreach (Node2 node in openSet)
+        // {
+        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
+        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.blue);
+        // }
+        //
+        // foreach (Node2 node in closedSet)
+        // {
+        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
+        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.red);
+        // }
         
         openSet.Clear();
         
         return retracedPath;
     }
 
-    private List<Node2> GetNeighbours(Node2 origin)
+    private List<Node2> GetNeighbours(Node2 origin, GameObject[,] grid)
     {
         List<Node2> neighbours = new();
         List<Node2> all = new();
@@ -152,7 +152,7 @@ public class PathFinder : MonoBehaviour
                 newPos = origin.nodePosition + new Vector2(j, i);
                 
                 // Check if the new position is valid
-                if (CheckValidSpace(newPos))
+                if (CheckValidSpace(newPos, grid))
                 {
                     Node2 existingNode = null;
                     existingNode = all.Find(node => node.nodePosition == newPos);
@@ -172,7 +172,7 @@ public class PathFinder : MonoBehaviour
         return neighbours;
     }
 
-    private bool CheckValidSpace(Vector2 position)
+    private bool CheckValidSpace(Vector2 position, GameObject[,] grid)
     {
         int xPos = (int)position.x;
         int zPos = (int)position.y;
@@ -185,10 +185,10 @@ public class PathFinder : MonoBehaviour
         // 5. if the playArea's[z, x] is equal to null
         return (
             xPos >= 0 &&
-            xPos < sceneController.Grid.GetLength(0) &&
+            xPos < grid.GetLength(0) &&
             zPos >= 0 &&
-            zPos < sceneController.Grid.GetLength(1) &&
-            !sceneController.Grid[xPos, zPos]
+            zPos < grid.GetLength(1) &&
+            !grid[xPos, zPos]
         );
     }
 

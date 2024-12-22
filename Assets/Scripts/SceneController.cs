@@ -258,8 +258,9 @@ public class SceneController : MonoBehaviour
                     activeSpinnerControl.SetSpinner(false);
                     activeSpinner.SetActive(false);
                     // unit.AStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
+                    StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid));
                     //StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), gridInt));
-                    unit._path2 = unit.pathFinder.CalculatePath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x));
+                    //unit._path2 = unit.pathFinder.CalculatePath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x));
                     // unit.StartAStar(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid);
                 }
             }

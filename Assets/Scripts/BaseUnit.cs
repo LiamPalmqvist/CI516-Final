@@ -337,6 +337,30 @@ public class BaseUnit : MonoBehaviour
     // ================================================================================================
     // ================================================================================================
 
+    public IEnumerator StartGetPath(Vector2 startPos, Vector2 endPos, GameObject[,] grid)
+    {
+        var t = Task.Run(() => pathFinder.CalculatePath(startPos, endPos, grid));
+
+        while (!t.IsCompleted)
+        {
+            yield return null;
+        }
+
+        if (!t.IsCompletedSuccessfully)
+        {
+            Debug.Log($"Failed to get path: {t.Exception}");
+            throw new Exception("Failed to get path");
+        }
+
+        if (t.IsCompleted)
+        { 
+            _path2 = t.Result;
+            Debug.Log(_path2);
+            Debug.Log("Task finished");
+            yield return null;
+        }
+    }
+    
     // public IEnumerator StartGetPath(Vector2 startPos, Vector2 endPos, int[,] gridInts)
     // {
     //     count = 0;
