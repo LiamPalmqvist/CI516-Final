@@ -83,11 +83,11 @@ public class BaseUnit : MonoBehaviour
             {
                 if (moving)
                 {
-                    GetDistance2();
+                    GetDistance();
                     return;
                 }
 
-                Move2();
+                Move();
             }
         }
         catch (InvalidOperationException)
@@ -96,7 +96,7 @@ public class BaseUnit : MonoBehaviour
         }
     }
 
-    private void Move2()
+    private void Move()
     {
         sceneController.Grid[(int)currentPos.x, (int)currentPos.y] = sceneController.Grid[(int)_path[0].nodePosition.x, (int)_path[0].nodePosition.y];
         sceneController.Grid[(int)_path[0].nodePosition.x, (int)_path[0].nodePosition.y] = gameObject;
@@ -104,7 +104,7 @@ public class BaseUnit : MonoBehaviour
         moving = true;
     }
 
-    private void GetDistance2()
+    private void GetDistance()
     {
         // if the current and next positions are within 0.1f of each other
         if (Vector3.Distance(transform.position, new Vector3(_path[0].nodePosition.y, 1f, _path[0].nodePosition.x)) <= 0.1f)
