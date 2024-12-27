@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using Random = System.Random;
 
@@ -29,6 +30,10 @@ public class SceneController : MonoBehaviour
     // public int obstacleCount = 0;
     public List<GameObject> obstacles = new List<GameObject>();
     
+    [Header("Resources")]
+    public GameObject resourcePrefab;
+    public List<GameObject> resources = new List<GameObject>();
+    
     // Map elements from Maps.cs
     Maps maps;
     
@@ -40,6 +45,7 @@ public class SceneController : MonoBehaviour
     private GameObject activeSpinner;
     private SpinnerControl spinnerControl;
     private SpinnerControl activeSpinnerControl;
+    private List<BaseUnit> selectedUnits = new();
 
     // Start is called before the first frame update
     void Start()
@@ -52,11 +58,9 @@ public class SceneController : MonoBehaviour
         // of 100
         maps = GetComponent<Maps>();
 
-        //SpawnObstacles();
-        //SpawnTeams();
-        //int[][] map1 = GenerateMap();
-        // SpawnFromMap(maps.map2);
+        // int[][] map1 = GenerateMap();
         SpawnFromMap(maps.map2);
+        // SpawnFromMap(map1);
     }
 
     void Update()
@@ -99,12 +103,14 @@ public class SceneController : MonoBehaviour
                         obstacles.Add(obstacle);
                         Grid[y, x] = obstacle;
                         break;
+                    
                     // case 1:
                     //     Grid[y, x] = Instantiate(emptyObstacle);
                     //     Grid[y, x].name = "EmptyNode";
                     //     Grid[y, x].transform.position = new Vector3(x, 1f, y);
                     //     gridInt[y, x] = 1;
                     //     break;
+                    
                     case 2:
                         GameObject team = Instantiate(teamPrefab);
                         team.name = $"{teamColourNames[teamNumber]}";
@@ -120,6 +126,12 @@ public class SceneController : MonoBehaviour
                         //Instantiate(team);
                         //Debug.Log($"{teamColourNames[teamNumber]} position is at {x}, {y}");
                         teamNumber++;
+                        break;
+                    
+                    case 3:
+                        GameObject resource = Instantiate(resourcePrefab);
+                        resources.Add(resource);
+                        resource.transform.position = new Vector3(x, 1f, y);
                         break;
                 }
                 
@@ -171,7 +183,7 @@ public class SceneController : MonoBehaviour
         Vector3 newPos = new Vector3(newX, 1f, newZ);
 
         // Check if position is empty
-        if (Grid[newZ, newX] == null)
+        if (!Grid[newZ, newX])
         {
             Grid[newZ, newX] = insertedObject;
             Debug.Log($"Set {newZ}, {newX} to {insertedObject.name}");
@@ -187,20 +199,6 @@ public class SceneController : MonoBehaviour
         return newPos;
     }
 
-    // public void PrintUnitPositions()
-    // {
-    //     for (int i = 0; i < 100; i++)
-    //     {
-    //         for (int j = 0; j < 100; j++)
-    //         {
-    //             if (Grid[i, j].name == "EntityPrefab(Clone)")
-    //             {
-    //                 Debug.Log($"Found {Grid[i, j].name} at position {i}, {j}");
-    //             }
-    //         }
-    //     }
-    // }
-
     private void GetPlayerMousePosition()
     {
        
@@ -214,63 +212,101 @@ public class SceneController : MonoBehaviour
             Vector3 hitPoint = new Vector3(Math.Abs((int)rayHit.point.x), 1, Math.Abs((int)rayHit.point.z));
             spinner.transform.position = hitPoint;
 
-            if (!spinnerControl.IsSpinnerSet())
+            // Set the start position of drawing the selector
+            // and set active
+
+            /* TODO: Allow for multiple selection via drag.
+             * TODO: Also show a rectangle of size start.xy, end.xy
+             */
+            if (Input.GetMouseButtonDown(0))
             {
-                // if the left mouse button is pressed
-                if (Input.GetMouseButtonDown(0))
+                activeSpinner.SetActive(true);
+                activeSpinner.transform.position = rayHit.point;
+                selectedUnits = new List<BaseUnit>();
+            } 
+            else if (Input.GetMouseButton(0))
+            {
+                Debug.Log("Mouse button held");
+                
+                // Create variables for vectors which translate the positions to 2D Vectors
+                Vector2 startPos = new Vector2(spinner.transform.position.z, spinner.transform.position.x);
+                Vector2 endPos = new Vector2(activeSpinner.transform.position.z, activeSpinner.transform.position.x);
+                
+                // Get the selected units from the static GetUnitsInArea function in PathFinder
+                selectedUnits = PathFinder.GetUnitsInArea(startPos, endPos, Grid);
+                
+                Debug.Log(selectedUnits.Count);
+                foreach (var unit in selectedUnits)
                 {
-                    if (Grid[(int)hitPoint.z, (int)hitPoint.x].name == "EntityPrefab(Clone)")
-                    {
-                        GameObject foundObject = Grid[(int)hitPoint.z, (int)hitPoint.x];
-                        // Debug.Log($"Found {foundObject.name} at position {hitPoint.x}, {hitPoint.z}");
-                        activeSpinner.SetActive(true);
-                        activeSpinnerControl.SetSpinner(true);
-                        spinnerControl.SetSpinner(true);
-                        activeSpinnerControl.assignedObject = foundObject;
-                    }
+                    unit.GetComponentInChildren<MeshRenderer>().enabled = true;
                 }
             }
-            else
+            else if (Input.GetMouseButtonUp(0))
             {
-                if (Input.GetButtonDown("Cancel"))
+                activeSpinner.SetActive(false);
+                foreach (var unit in selectedUnits)
                 {
-                    spinnerControl.SetSpinner(false);
-                    activeSpinnerControl.SetSpinner(false);
-                    activeSpinner.SetActive(false);
-                } else if (Input.GetMouseButtonDown(0))
-                {
-                    spinnerControl.SetSpinner(false);
-                    spinnerControl.lastClicked = new Vector2((int)hitPoint.z, (int)hitPoint.x);
-                    GameObject assignedObject = activeSpinnerControl.assignedObject;
-                    BaseUnit unit = assignedObject.GetComponent<BaseUnit>();
-                    activeSpinnerControl.SetSpinner(false);
-                    activeSpinner.SetActive(false);
-                    StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid));
+                    unit.GetComponentInChildren<MeshRenderer>().enabled = false;
                 }
             }
+            
+            // if (!spinnerControl.IsSpinnerSet())
+            // {
+            //     // if the left mouse button is pressed
+            //     if (Input.GetMouseButtonDown(0))
+            //     {
+            //         if (Grid[(int)hitPoint.z, (int)hitPoint.x].name == "EntityPrefab(Clone)")
+            //         {
+            //             GameObject foundObject = Grid[(int)hitPoint.z, (int)hitPoint.x];
+            //             // Debug.Log($"Found {foundObject.name} at position {hitPoint.x}, {hitPoint.z}");
+            //             activeSpinnerControl.assignedObject = foundObject;
+            //             if (activeSpinnerControl.assignedObject.GetComponent<BaseUnit>().teamNumber != 0)
+            //                 return;
+            //             activeSpinner.SetActive(true);
+            //             activeSpinnerControl.SetSpinner(true);
+            //             spinnerControl.SetSpinner(true);
+            //         }
+            //     }
+            // }
+            // else
+            // {
+            //     if (Input.GetButtonDown("Cancel"))
+            //     {
+            //         spinnerControl.SetSpinner(false);
+            //         activeSpinnerControl.SetSpinner(false);
+            //         activeSpinner.SetActive(false);
+            //     } else if (Input.GetMouseButtonDown(0))
+            //     {
+            //         spinnerControl.SetSpinner(false);
+            //         spinnerControl.lastClicked = new Vector2((int)hitPoint.z, (int)hitPoint.x);
+            //         GameObject assignedObject = activeSpinnerControl.assignedObject;
+            //         BaseUnit unit = assignedObject.GetComponent<BaseUnit>();
+            //         activeSpinnerControl.SetSpinner(false);
+            //         activeSpinner.SetActive(false);
+            //         StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid));
+            //     }
+            // }
         }
     }
 
-    // private int[][] GenerateMap()
-    // {
-    //     Random random = new Random();
-    //     int[][] map = new int[100][];
-    //     for (int i = 0; i < 100; i++)
-    //     {
-    //         for (int j = 0; j < 100; j++)
-    //         {
-    //             map[i][j] = random.Next(0, 1);
-    //         }
-    //     }
-    //
-    //     for (int i = 0; i < map.Length; i++)
-    //     {
-    //         for (int j = 0; j < map[i].Length; j++)
-    //         {
-    //             Debug.Log(map[i][j]);
-    //         }
-    //     }
-    //
-    //     return map;
-    // }
+    
+    // Not in use at the moment, used for generating random maps
+    private int[][] GenerateMap()
+    {
+        Random random = new Random();
+        int[][] map = new int[100][];
+        for (int i = 0; i < 100; i++)
+        {
+            int[] row = new int[100];
+            for (int j = 0; j < 100; j++)
+            {
+                row[j] = random.Next(0, 2);
+            }
+            map[i] = row;
+        }
+        
+        map[40][40] = 2;
+        
+        return map;
+    }
 }

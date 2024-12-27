@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Utils;
 
 public class PathFinder : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class PathFinder : MonoBehaviour
     public List<Node> openSet = new();
     public List<Node> closedSet = new();
     public List<Node> path = new();
+    
+    // public HashSet<Node> closedSet = new();
+    // public PriorityQueue<Node> openSet = new();
     
     // Positions
     public Vector2 startPosition;
@@ -33,10 +37,15 @@ public class PathFinder : MonoBehaviour
         endPosition = Vector2.zero;
     }
 
+    // This assumes that the coordinates ARE flipped from (X, Y) to (Y, X)
     public List<Node> CalculatePath(Vector2 start, Vector2 target, GameObject[,] grid)
     {
         Clear();
+        
+        Debug.Log("Hello!");
 
+        Debug.Log($"{start}, {target}");
+        
         startPosition = start;
         endPosition = target;
         int iterations = 0;
@@ -49,6 +58,7 @@ public class PathFinder : MonoBehaviour
             // Create starting node, add to closedSet
             // add currentNode's neighbours to openSet
 
+            Debug.Log($"Current NODE: {currentNode}");
             
             while (openSet.Count > 0)
             //for (int i = 1; i <= 1000 && openSet.Count > 0; i++)
@@ -64,6 +74,7 @@ public class PathFinder : MonoBehaviour
 
                 if (currentNode.nodePosition == endPosition)
                 {
+                    Debug.Log($"PATH FOUND AT {endPosition}");
                     // Path found
                     Node pathNode = currentNode;
                     path = Retrace(pathNode);
@@ -77,7 +88,7 @@ public class PathFinder : MonoBehaviour
         }
         
         //Debug.Log($"Iterations: {iterations}");
-
+        printPath(path);
         return path;
     }
 
@@ -93,25 +104,8 @@ public class PathFinder : MonoBehaviour
             retracedPath.Add(pathNode);
             pathNode = pathNode.Parent;
         }
-        retracedPath.Reverse();
 
-        // foreach (Node node in retracedPath)
-        // {
-        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.green);
-        // }
-        //
-        // foreach (Node node in openSet)
-        // {
-        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.blue);
-        // }
-        //
-        // foreach (Node node in closedSet)
-        // {
-        //     nodeRef = Instantiate(nodePrefab, new Vector3(node.nodePosition.y, 0.1f, node.nodePosition.x), Quaternion.identity);
-        //     nodeRef.GetComponent<NodeVisualiser>().Init(Color.red);
-        // }
+        retracedPath.Reverse();
         
         openSet.Clear();
         
@@ -176,6 +170,153 @@ public class PathFinder : MonoBehaviour
             zPos < grid.GetLength(1) &&
             !grid[xPos, zPos]
         );
+    }
+
+    // This assumes that the spawn coordinates are already flipped
+    // from (X, Y) to (Y, X)
+    public static Vector2 CheckSpawnCoordinates(BaseUnit unit, Vector2 spawnPosition, int radius, GameObject[,] grid)
+    {
+        Vector2 newSpawnPosition = new Vector2(0, 0);
+        float bestDistanceToSpawn = Mathf.Infinity;
+        float closestDistanceToUnit = Mathf.Infinity;
+        
+        // loop through vertically
+        for (int y = (int)spawnPosition.x-radius; y < (int)spawnPosition.x+radius; y++)
+        {
+            // loop through horizontally
+            for (int x = (int)spawnPosition.y-radius; x < (int)spawnPosition.y+radius; x++)
+            {
+                Vector2 gridPosition = new Vector2(y, x);
+                Debug.Log(gridPosition);
+                
+                // if the grid position IS FILLED, continue to next loop
+                try
+                {
+                    if (grid[x, y])
+                    {
+                        Debug.Log($"Grid position {gridPosition.x}, {gridPosition.y} filled");
+                        continue;
+                    }
+                }
+                // if the index is outside the range of the grid, i.e. (-1, 25)
+                // continue to the next loop
+                catch (IndexOutOfRangeException e)
+                {
+                    Debug.Log(e);
+                    continue;
+                }
+                
+                // if the new position IS the spawn position, continue to next loop
+                if (gridPosition == spawnPosition) continue;
+
+                Debug.Log($"{grid[x, y]} is free");
+                
+                // if the distance from the current grid position to the spawn coords
+                // is LESS than the current best distance
+                if (Vector2.Distance(spawnPosition, gridPosition) < bestDistanceToSpawn)
+                {
+                    // then the new best distance is the distance from the spawn position to the current
+                    // grid position
+                    bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
+                    newSpawnPosition = new Vector2(x, y);
+                    Debug.Log($"{newSpawnPosition} is the new best position with distance of {bestDistanceToSpawn}");
+                
+                } 
+                // Otherwise if the distance is APPROXIMATELY THE SAME
+                else if (Mathf.Approximately(Vector2.Distance(spawnPosition, gridPosition), bestDistanceToSpawn))
+                {
+                    // IF the distance from the current grid position is LESS than the current 
+                    // closest distance to the unit
+                    if (Vector2.Distance(gridPosition, unit.currentPos) <= closestDistanceToUnit)
+                    {
+                        // Make that grid position the new best
+                        closestDistanceToUnit = Vector2.Distance(gridPosition, unit.currentPos);
+                        bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
+                        newSpawnPosition = new Vector2(x, y);
+                        Debug.Log($"{newSpawnPosition} is now the new best position");
+                    }
+                }
+            }
+        }
+        
+        // Finally, return the new position to travel to
+        return newSpawnPosition;
+    }
+
+    public static List<BaseUnit> GetUnitsInArea(Vector2 startPosition, Vector2 endPosition, GameObject[,] grid)
+    {
+        List<BaseUnit> units = new();
+        if (startPosition.x <= endPosition.x)
+            for (int x = (int)startPosition.x; x < (int)endPosition.x; x++)
+            {
+                if (startPosition.y <= endPosition.y)
+                    for (int y = (int)startPosition.y; y < (int)endPosition.y; y++)
+                    {
+                        try
+                        {
+                            if (grid[x, y].name == "EntityPrefab(Clone)")
+                                units.Add(grid[y, x].GetComponent<BaseUnit>());
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Log(e);
+                        }
+                    }
+                else
+                    for (int y = (int)endPosition.y; y < (int)startPosition.y; y++)
+                    {
+                        try
+                        {
+                            if (grid[x, y].name == "EntityPrefab(Clone)")
+                                units.Add(grid[y, x].GetComponent<BaseUnit>());
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Log(e);
+                        }
+                    }
+            }
+        else
+            for (int x = (int)endPosition.x; x < (int)startPosition.x; x++)
+            {
+                if (startPosition.y <= endPosition.y)
+                    for (int y = (int)startPosition.y; y < (int)endPosition.y; y++)
+                    {
+                        try
+                        {
+                            if (grid[x, y].name == "EntityPrefab(Clone)")
+                                units.Add(grid[y, x].GetComponent<BaseUnit>());
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Log(e);
+                        }
+                    }
+                else
+                    for (int y = (int)endPosition.y; y < (int)startPosition.y; y++)
+                    {
+                        try
+                        {
+                            if (grid[x, y].name == "EntityPrefab(Clone)")
+                                units.Add(grid[y, x].GetComponent<BaseUnit>());
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Log(e);
+                        }
+                    }
+            }
+
+        return units;
+    }
+
+    private void printPath(List<Node> path)
+    {
+        Debug.Log("Path retracing");
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            Debug.Log($"Retraced node position {path[i].nodePosition}");
+        }
     }
 
 }
