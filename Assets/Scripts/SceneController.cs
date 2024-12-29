@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
 using Random = System.Random;
 
 public class SceneController : MonoBehaviour
@@ -17,22 +19,28 @@ public class SceneController : MonoBehaviour
     // that can be changed
     [Header("Teams Data")]
     public GameObject teamPrefab;
-    public List<GameObject> activeTeams = new List<GameObject>();
+    public List<GameObject> activeTeams = new();
     public Color[] teamColors = { Color.red, Color.blue, Color.green, Color.yellow };
     public string[] teamColourNames = { "red", "blue", "green", "yellow" };
+    public TeamClass playerTeam;
     
     [Header("Customisable Data")]
     public Vector2[] teamPositions =
-        { new Vector2(25, 25), new Vector2(25, 75), new Vector2(75, 25), new Vector2(75, 75) };
+    {
+        new Vector2(25, 25), 
+        new Vector2(25, 75),
+        new Vector2(75, 25), 
+        new Vector2(75, 75)
+    };
 
     [Header("Obstacles")]
     public GameObject obstaclePrefab;
     // public int obstacleCount = 0;
-    public List<GameObject> obstacles = new List<GameObject>();
+    public List<GameObject> obstacles = new();
     
     [Header("Resources")]
     public GameObject resourcePrefab;
-    public List<GameObject> resources = new List<GameObject>();
+    public List<GameObject> resources = new();
     
     // Map elements from Maps.cs
     Maps maps;
@@ -45,7 +53,11 @@ public class SceneController : MonoBehaviour
     private GameObject activeSpinner;
     private SpinnerControl spinnerControl;
     private SpinnerControl activeSpinnerControl;
-    private List<BaseUnit> selectedUnits = new();
+    private List<GameObject> selectedUnits = new();
+    
+    // UI
+    TMP_Text _text;
+
 
     // Start is called before the first frame update
     void Start()
@@ -61,9 +73,11 @@ public class SceneController : MonoBehaviour
         // int[][] map1 = GenerateMap();
         SpawnFromMap(maps.map2);
         // SpawnFromMap(map1);
+        
+        _text = GameObject.Find("Canvas").GetComponentInChildren<TMP_Text>();  
     }
 
-    void Update()
+    void FixedUpdate()
     {
         GetPlayerMousePosition();
     }
@@ -91,6 +105,7 @@ public class SceneController : MonoBehaviour
         // iterate through the array's Y AXIS
         for (int y = 0; y < mapArray.Length; y++)
         {
+            List<int> textRow = new List<int>();
             // iterate through the array's X AXIS
             for (int x = 0; x < mapArray[y].Length; x++)
             {
@@ -134,11 +149,11 @@ public class SceneController : MonoBehaviour
                         resource.transform.position = new Vector3(x, 1f, y);
                         break;
                 }
-                
-                
                 //Grid[y, x] = mapArray[y][x];
             }
         }
+        
+        playerTeam = activeTeams[0].GetComponent<TeamClass>();
         
         spinner = Instantiate(spinnerPrefab, Vector3.zero, Quaternion.identity);
         activeSpinner = Instantiate(activeSpinnerPrefab, Vector3.zero, Quaternion.identity);
@@ -220,9 +235,13 @@ public class SceneController : MonoBehaviour
              */
             if (Input.GetMouseButtonDown(0))
             {
+                foreach (GameObject unit in selectedUnits)
+                {
+                    unit.transform.GetChild(0).gameObject.SetActive(false);
+                }
                 activeSpinner.SetActive(true);
                 activeSpinner.transform.position = rayHit.point;
-                selectedUnits = new List<BaseUnit>();
+                selectedUnits = new List<GameObject>();
             } 
             else if (Input.GetMouseButton(0))
             {
@@ -233,21 +252,21 @@ public class SceneController : MonoBehaviour
                 Vector2 endPos = new Vector2(activeSpinner.transform.position.z, activeSpinner.transform.position.x);
                 
                 // Get the selected units from the static GetUnitsInArea function in PathFinder
-                selectedUnits = PathFinder.GetUnitsInArea(startPos, endPos, Grid);
+                selectedUnits = PathFinder.GetUnitsInArea(new Vector2Int((int)startPos.x, (int)startPos.y), new Vector2Int((int)endPos.x, (int)endPos.y), playerTeam.activeUnits);
                 
                 Debug.Log(selectedUnits.Count);
-                foreach (var unit in selectedUnits)
+                foreach (GameObject unit in selectedUnits)
                 {
-                    unit.GetComponentInChildren<MeshRenderer>().enabled = true;
+                    unit.transform.GetChild(0).gameObject.SetActive(true);
                 }
             }
             else if (Input.GetMouseButtonUp(0))
             {
                 activeSpinner.SetActive(false);
-                foreach (var unit in selectedUnits)
-                {
-                    unit.GetComponentInChildren<MeshRenderer>().enabled = false;
-                }
+                // foreach (GameObject unit in selectedUnits)
+                // {
+                //     unit.transform.GetChild(0).gameObject.SetActive(false);
+                // }
             }
             
             // if (!spinnerControl.IsSpinnerSet())
@@ -288,6 +307,21 @@ public class SceneController : MonoBehaviour
             // }
         }
     }
+
+    // Not in use
+    // private void DisplayText(int[][] map)
+    // {
+    //     _text.text = "";
+    //     for (int i = map.Length-1; i >= 0; i--)
+    //     {
+    //         for (int j = 0; j < map[i].Length; j++)
+    //         {
+    //             _text.text += map[i][j] + " ";
+    //         }
+    //         _text.text += "\n";
+    //     }
+    // }
+    
 
     
     // Not in use at the moment, used for generating random maps

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -27,6 +28,7 @@ public class TeamClass : MonoBehaviour
     public int spawnRadius;             
     public GameObject unitPrefab;       
     public GameObject[] buildingPrefabs;
+    public bool ableToSpawn;
     
     [SerializeField] SceneController sceneController;            // Controls which units are in what places 
     [SerializeField] private List<GameObject> inactiveUnits;     // All units will be initially assigned to this list until activated
@@ -70,10 +72,21 @@ public class TeamClass : MonoBehaviour
 
         //for (int i = 0; i < maxUnitCount; i++)
         //{
-            SpawnUnit();
+            //SpawnUnit();
         //}
         
         //sceneController.PrintUnitPositions();
+        
+        ableToSpawn = true;
+    }
+
+    void Update()
+    {
+        if (!ableToSpawn) return;
+
+        ableToSpawn = false;
+        SpawnUnit();
+        StartCoroutine(CountDown(5));
     }
     
     // from https://discussions.unity.com/t/how-to-find-a-child-gameobject-by-name/31255/2
@@ -140,6 +153,13 @@ public class TeamClass : MonoBehaviour
         {
             Debug.Log("No units spawned");
         }
+    }
+
+    public IEnumerator CountDown(int amount)
+    {
+        yield return new WaitForSeconds(amount);
+        
+        ableToSpawn = true;
     }
 
     /// <summary>

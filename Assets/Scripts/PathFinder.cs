@@ -243,72 +243,110 @@ public class PathFinder : MonoBehaviour
         return newSpawnPosition;
     }
 
-    public static List<BaseUnit> GetUnitsInArea(Vector2 startPosition, Vector2 endPosition, GameObject[,] grid)
+    public static List<GameObject> GetUnitsInArea(Vector2Int startPosition, Vector2Int endPosition, List<GameObject> teamUnits)
     {
+        // Get all of the BaseUnit Components in the passed units
         List<BaseUnit> units = new();
-        if (startPosition.x <= endPosition.x)
-            for (int x = (int)startPosition.x; x < (int)endPosition.x; x++)
+        foreach (GameObject unit in teamUnits)
+        {
+            units.Add(unit.GetComponent<BaseUnit>());
+        }
+        
+        // Check if the unit's
+        // 1. X position is less than the start/end position's X value
+        // 2. Y position is less than the start/end position's Y value
+        // 3. X position is greater than the end/start position's X 
+        // 4. Y position is greater than the end/start position's Y
+        List<GameObject> selectedUnits = new();
+        for (int i = 0; i < units.Count; i++)
+        {
+            if (units[i].currentPos.x < (startPosition.x < endPosition.x ? endPosition.x : startPosition.x) &&
+                units[i].currentPos.x > (startPosition.x < endPosition.x ? startPosition.x : endPosition.x) &&
+                units[i].currentPos.y < (startPosition.y < endPosition.y ? endPosition.y : startPosition.y) &&
+                units[i].currentPos.y > (startPosition.y < endPosition.y ? startPosition.y : endPosition.y)
+               )
             {
-                if (startPosition.y <= endPosition.y)
-                    for (int y = (int)startPosition.y; y < (int)endPosition.y; y++)
-                    {
-                        try
-                        {
-                            if (grid[x, y].name == "EntityPrefab(Clone)")
-                                units.Add(grid[y, x].GetComponent<BaseUnit>());
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log(e);
-                        }
-                    }
-                else
-                    for (int y = (int)endPosition.y; y < (int)startPosition.y; y++)
-                    {
-                        try
-                        {
-                            if (grid[x, y].name == "EntityPrefab(Clone)")
-                                units.Add(grid[y, x].GetComponent<BaseUnit>());
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log(e);
-                        }
-                    }
+                selectedUnits.Add(teamUnits[i]);
             }
-        else
-            for (int x = (int)endPosition.x; x < (int)startPosition.x; x++)
-            {
-                if (startPosition.y <= endPosition.y)
-                    for (int y = (int)startPosition.y; y < (int)endPosition.y; y++)
-                    {
-                        try
-                        {
-                            if (grid[x, y].name == "EntityPrefab(Clone)")
-                                units.Add(grid[y, x].GetComponent<BaseUnit>());
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log(e);
-                        }
-                    }
-                else
-                    for (int y = (int)endPosition.y; y < (int)startPosition.y; y++)
-                    {
-                        try
-                        {
-                            if (grid[x, y].name == "EntityPrefab(Clone)")
-                                units.Add(grid[y, x].GetComponent<BaseUnit>());
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log(e);
-                        }
-                    }
-            }
-
-        return units;
+        }
+        
+        return selectedUnits;
     }
+    
+    // public static List<BaseUnit> GetUnitsInArea(Vector2Int startPosition, Vector2Int endPosition, GameObject[,] grid)
+    // {
+    //     Debug.Log($"Searching from {startPosition} to {endPosition}");
+    //     List<BaseUnit> units = new();
+    //     if (startPosition.x <= endPosition.x)
+    //         for (int x = startPosition.x; x < endPosition.x; x++)
+    //             if (startPosition.y <= endPosition.y)
+    //             {
+    //                 Debug.Log("Start X <= End X && Start Y <= End Y");
+    //                 for (int y = startPosition.y; y < endPosition.y; y++)
+    //                 {
+    //                     try
+    //                     {
+    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
+    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
+    //                     }
+    //                     catch (Exception e)
+    //                     {
+    //                         Debug.Log(e);
+    //                     }
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 Debug.Log("Start X <= End X && Start Y > End Y");
+    //                 for (int y = endPosition.y; y < startPosition.y; y++)
+    //                 {
+    //                     try
+    //                     {
+    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
+    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
+    //                     }
+    //                     catch (Exception e)
+    //                     {
+    //                         Debug.Log(e);
+    //                     }
+    //                 }
+    //             }
+    //     else
+    //         for (int x = endPosition.x; x < startPosition.x; x++)
+    //             if (startPosition.y <= endPosition.y)
+    //             {
+    //                 Debug.Log("Start X > End X && Start Y <= End Y");
+    //                 for (int y = startPosition.y; y < endPosition.y; y++)
+    //                 {
+    //                     try
+    //                     {
+    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
+    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
+    //                     }
+    //                     catch (Exception e)
+    //                     {
+    //                         Debug.Log(e);
+    //                     }
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 Debug.Log("Start X > End X && Start Y > End Y");
+    //                 for (int y = endPosition.y; y < startPosition.y; y++)
+    //                 {
+    //                     try
+    //                     {
+    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
+    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
+    //                     }
+    //                     catch (Exception e)
+    //                     {
+    //                         Debug.Log(e);
+    //                     }
+    //                 }
+    //             }
+    //     return units;
+    // }
 
     private void printPath(List<Node> path)
     {
