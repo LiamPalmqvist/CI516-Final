@@ -132,17 +132,22 @@ MonoBehaviour:
   state: 0
   sceneController: {fileID: 0}
   team: {fileID: 0}
-  currentHealth: 0
+  currentHealth: 100
   currentAmmo: 0
   currentTeamNumber: 0
   spawnCoords: {x: 0, y: 0}
   spawnRadius: 0
+  seeRadius: 10
   currentPos: {x: 0, y: 0}
   targetPos: {x: 0, y: 0}
   moving: 0
   fleeing: 0
   pathFinder: {fileID: 0}
   findingPath: 0
+  currentResources: 0
+  maxResources: 100
+  nearestResource: {fileID: 0}
+  gathering: 0
 --- !u!114 &2806767392767182107
 MonoBehaviour:
   m_ObjectHideFlags: 0

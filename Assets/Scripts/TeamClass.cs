@@ -29,6 +29,7 @@ public class TeamClass : MonoBehaviour
     public GameObject unitPrefab;       
     public GameObject[] buildingPrefabs;
     public bool ableToSpawn;
+    public int resources = 100;
     
     [SerializeField] SceneController sceneController;            // Controls which units are in what places 
     [SerializeField] private List<GameObject> inactiveUnits;     // All units will be initially assigned to this list until activated
@@ -82,9 +83,10 @@ public class TeamClass : MonoBehaviour
 
     void Update()
     {
-        if (!ableToSpawn) return;
+        if (!ableToSpawn || resources < 100) return;
 
         ableToSpawn = false;
+        resources -= 100;
         SpawnUnit();
         StartCoroutine(CountDown(5));
     }
@@ -123,7 +125,7 @@ public class TeamClass : MonoBehaviour
     /// This will spawn a new unit if the inactive unit count is greater than 0
     /// </summary>
     /// <param name="unit"></param>
-    public void SpawnUnit()
+    private void SpawnUnit()
     {
         if (inactiveUnits.Count > 0)
         {
@@ -138,6 +140,7 @@ public class TeamClass : MonoBehaviour
                 Debug.Log($"Position {position}");
                 BaseUnit unitScript = unit.GetComponent<BaseUnit>();
                 unitScript.currentPos = new Vector2(unit.transform.position.z, unit.transform.position.x);
+                unitScript.SetMaxHealth(100);
                 
                 activeUnits.Add(unit);
                 inactiveUnits.Remove(unit);

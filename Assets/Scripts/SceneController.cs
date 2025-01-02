@@ -1,9 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using static Resource;
 using Random = System.Random;
 
 public class SceneController : MonoBehaviour
@@ -37,10 +40,14 @@ public class SceneController : MonoBehaviour
     public GameObject obstaclePrefab;
     // public int obstacleCount = 0;
     public List<GameObject> obstacles = new();
-    
-    [Header("Resources")]
+
+    [Header("Resources")] 
+    public int maxResources;
+    public int resourcesSpawned = 0;
     public GameObject resourcePrefab;
-    public List<GameObject> resources = new();
+    public List<GameObject> activeResources = new();
+    public List<GameObject> inactiveResources = new();
+    public bool canSpawnResource = true;
     
     // Map elements from Maps.cs
     Maps maps;
@@ -80,6 +87,13 @@ public class SceneController : MonoBehaviour
     void FixedUpdate()
     {
         GetPlayerMousePosition();
+
+        
+        if (!canSpawnResource) return;
+        
+        canSpawnResource = false;
+        SpawnResource();
+        StartCoroutine(CountDown(5));
     }
 
     // This takes an array of arrays of integers and creates a map
@@ -105,7 +119,6 @@ public class SceneController : MonoBehaviour
         // iterate through the array's Y AXIS
         for (int y = 0; y < mapArray.Length; y++)
         {
-            List<int> textRow = new List<int>();
             // iterate through the array's X AXIS
             for (int x = 0; x < mapArray[y].Length; x++)
             {
@@ -145,12 +158,20 @@ public class SceneController : MonoBehaviour
                     
                     case 3:
                         GameObject resource = Instantiate(resourcePrefab);
-                        resources.Add(resource);
+                        activeResources.Add(resource);
+                        resource.GetComponent<Resource>().SpawnResource(resourceTypes[new Random().Next(resourceTypes.Count-1)], 100, new Vector2(y, x));
                         resource.transform.position = new Vector3(x, 1f, y);
+                        resourcesSpawned++;
                         break;
                 }
                 //Grid[y, x] = mapArray[y][x];
             }
+        }
+        
+        for (int i = resourcesSpawned; i < maxResources; i++)
+        {
+            GameObject resource = Instantiate(resourcePrefab, new Vector3(0 + i, 1, -1 - 4), Quaternion.identity);
+            inactiveResources.Add(resource);
         }
         
         playerTeam = activeTeams[0].GetComponent<TeamClass>();
@@ -233,7 +254,7 @@ public class SceneController : MonoBehaviour
             /* TODO: Allow for multiple selection via drag.
              * TODO: Also show a rectangle of size start.xy, end.xy
              */
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(1))
             {
                 foreach (GameObject unit in selectedUnits)
                 {
@@ -243,7 +264,7 @@ public class SceneController : MonoBehaviour
                 activeSpinner.transform.position = rayHit.point;
                 selectedUnits = new List<GameObject>();
             } 
-            else if (Input.GetMouseButton(0))
+            else if (Input.GetMouseButton(1))
             {
                 Debug.Log("Mouse button held");
                 
@@ -260,7 +281,7 @@ public class SceneController : MonoBehaviour
                     unit.transform.GetChild(0).gameObject.SetActive(true);
                 }
             }
-            else if (Input.GetMouseButtonUp(0))
+            else if (Input.GetMouseButtonUp(1))
             {
                 activeSpinner.SetActive(false);
                 // foreach (GameObject unit in selectedUnits)
@@ -268,44 +289,44 @@ public class SceneController : MonoBehaviour
                 //     unit.transform.GetChild(0).gameObject.SetActive(false);
                 // }
             }
-            
-            // if (!spinnerControl.IsSpinnerSet())
-            // {
-            //     // if the left mouse button is pressed
-            //     if (Input.GetMouseButtonDown(0))
-            //     {
-            //         if (Grid[(int)hitPoint.z, (int)hitPoint.x].name == "EntityPrefab(Clone)")
-            //         {
-            //             GameObject foundObject = Grid[(int)hitPoint.z, (int)hitPoint.x];
-            //             // Debug.Log($"Found {foundObject.name} at position {hitPoint.x}, {hitPoint.z}");
-            //             activeSpinnerControl.assignedObject = foundObject;
-            //             if (activeSpinnerControl.assignedObject.GetComponent<BaseUnit>().teamNumber != 0)
-            //                 return;
-            //             activeSpinner.SetActive(true);
-            //             activeSpinnerControl.SetSpinner(true);
-            //             spinnerControl.SetSpinner(true);
-            //         }
-            //     }
-            // }
-            // else
-            // {
-            //     if (Input.GetButtonDown("Cancel"))
-            //     {
-            //         spinnerControl.SetSpinner(false);
-            //         activeSpinnerControl.SetSpinner(false);
-            //         activeSpinner.SetActive(false);
-            //     } else if (Input.GetMouseButtonDown(0))
-            //     {
-            //         spinnerControl.SetSpinner(false);
-            //         spinnerControl.lastClicked = new Vector2((int)hitPoint.z, (int)hitPoint.x);
-            //         GameObject assignedObject = activeSpinnerControl.assignedObject;
-            //         BaseUnit unit = assignedObject.GetComponent<BaseUnit>();
-            //         activeSpinnerControl.SetSpinner(false);
-            //         activeSpinner.SetActive(false);
-            //         StartCoroutine(unit.StartGetPath(unit.currentPos, new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid));
-            //     }
-            // }
+
+            // if the amount of selected units is less than or equal to 0, return
+            if (!Input.GetMouseButtonDown(0)) return;
+            if (selectedUnits.Count <= 0) return;
+            // if the left mouse button is pressed
+            if (!PathFinder.CheckValidSpace(new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid)) { Debug.Log("Invalid"); return;}
+            // if the space the player clicked is not valid, return
+            foreach (var baseUnit in selectedUnits.Select(unit => unit.GetComponent<BaseUnit>()))
+            {
+                Debug.Log("Starting navigation to selected space");
+                baseUnit.targetPos = new Vector2((int)hitPoint.z, (int)hitPoint.x);
+                baseUnit.transform.GetChild(0).gameObject.SetActive(false);
+            }
+            selectedUnits.Clear();
         }
+    }
+
+    private void SpawnResource()
+    {
+        Vector2 randomPos = new Vector2(new Random().Next(0, 99), new Random().Next(0, 99));
+        if (PathFinder.CheckValidSpace(randomPos, Grid))
+        {
+            GameObject resource = inactiveResources.Last();
+            resource.GetComponent<Resource>().SpawnResource(resourceTypes[new Random().Next(0, resourceTypes.Count-2)], 100, randomPos);
+            activeResources.Add(resource);
+            inactiveResources.Remove(resource);
+            Grid[(int)randomPos.y, (int)randomPos.x] = resource;
+        }
+
+        // Has a chance to spawn, if not, oh well
+        canSpawnResource = false;
+    }
+
+    private IEnumerator CountDown(int seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+
+        canSpawnResource = true;
     }
 
     // Not in use

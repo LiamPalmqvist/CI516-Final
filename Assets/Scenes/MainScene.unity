@@ -766,7 +766,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4809bf22d1c24ef89e021ae6f981c2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  teamPrefab: {fileID: 8490709737874559207, guid: e60f87376e8104ab1a182a57e4f3471c, type: 3}
+  teamPrefab: {fileID: 4753188623435197205, guid: 7b3d5a7ea8ac44440b485021c9ee9efd, type: 3}
   activeTeams: []
   teamColors:
   - {r: 1, g: 0, b: 0, a: 1}
@@ -784,10 +784,14 @@ MonoBehaviour:
   - {x: 25, y: 75}
   - {x: 75, y: 25}
   - {x: 75, y: 75}
-  obstaclePrefab: {fileID: 4983277409742579886, guid: 2caf24b6e07644f5fbc187a98947d19d, type: 3}
+  obstaclePrefab: {fileID: 1489412248753568369, guid: fb489d9fdf9394507a6eed9a4e21c376, type: 3}
   obstacles: []
+  maxResources: 5
+  resourcesSpawned: 0
   resourcePrefab: {fileID: 5359735493900802168, guid: 563cebaba902a42f5ac7ad4db5e0d6a8, type: 3}
-  resources: []
+  activeResources: []
+  inactiveResources: []
+  canSpawnResource: 0
   spinnerPrefab: {fileID: 881647232888604534, guid: a3a0606cdb5784f71b1f6328b8e208bb, type: 3}
   activeSpinnerPrefab: {fileID: 881647232888604534, guid: 6907d5a04384d4da7b2de86dd7c07df3, type: 3}
 --- !u!4 &1661426401

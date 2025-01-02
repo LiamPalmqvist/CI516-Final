@@ -42,9 +42,9 @@ public class PathFinder : MonoBehaviour
     {
         Clear();
         
-        Debug.Log("Hello!");
+        // Debug.Log("Hello!");
 
-        Debug.Log($"{start}, {target}");
+        Debug.Log($"{start} to {target}");
         
         startPosition = start;
         endPosition = target;
@@ -58,7 +58,7 @@ public class PathFinder : MonoBehaviour
             // Create starting node, add to closedSet
             // add currentNode's neighbours to openSet
 
-            Debug.Log($"Current NODE: {currentNode}");
+            // Debug.Log($"Current NODE: {currentNode}");
             
             while (openSet.Count > 0)
             //for (int i = 1; i <= 1000 && openSet.Count > 0; i++)
@@ -85,6 +85,10 @@ public class PathFinder : MonoBehaviour
                 }
             }
             
+        }
+        else
+        {
+            Debug.Log("Not a valid space");
         }
         
         //Debug.Log($"Iterations: {iterations}");
@@ -152,7 +156,7 @@ public class PathFinder : MonoBehaviour
         return neighbours;
     }
 
-    private bool CheckValidSpace(Vector2 position, GameObject[,] grid)
+    public static bool CheckValidSpace(Vector2 position, GameObject[,] grid)
     {
         int xPos = (int)position.x;
         int zPos = (int)position.y;
@@ -174,7 +178,7 @@ public class PathFinder : MonoBehaviour
 
     // This assumes that the spawn coordinates are already flipped
     // from (X, Y) to (Y, X)
-    public static Vector2 CheckSpawnCoordinates(BaseUnit unit, Vector2 spawnPosition, int radius, GameObject[,] grid)
+    public static Vector2 CheckSpawnCoordinates(Vector2 startPosition, Vector2 spawnPosition, int radius, GameObject[,] grid)
     {
         Vector2 newSpawnPosition = new Vector2(0, 0);
         float bestDistanceToSpawn = Mathf.Infinity;
@@ -194,7 +198,7 @@ public class PathFinder : MonoBehaviour
                 {
                     if (grid[x, y])
                     {
-                        Debug.Log($"Grid position {gridPosition.x}, {gridPosition.y} filled");
+                        // Debug.Log($"Grid position {gridPosition.x}, {gridPosition.y} filled");
                         continue;
                     }
                 }
@@ -209,7 +213,7 @@ public class PathFinder : MonoBehaviour
                 // if the new position IS the spawn position, continue to next loop
                 if (gridPosition == spawnPosition) continue;
 
-                Debug.Log($"{grid[x, y]} is free");
+                // Debug.Log($"{grid[x, y]} is free");
                 
                 // if the distance from the current grid position to the spawn coords
                 // is LESS than the current best distance
@@ -219,7 +223,7 @@ public class PathFinder : MonoBehaviour
                     // grid position
                     bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
                     newSpawnPosition = new Vector2(x, y);
-                    Debug.Log($"{newSpawnPosition} is the new best position with distance of {bestDistanceToSpawn}");
+                    // Debug.Log($"{newSpawnPosition} is the new best position with distance of {bestDistanceToSpawn}");
                 
                 } 
                 // Otherwise if the distance is APPROXIMATELY THE SAME
@@ -227,13 +231,13 @@ public class PathFinder : MonoBehaviour
                 {
                     // IF the distance from the current grid position is LESS than the current 
                     // closest distance to the unit
-                    if (Vector2.Distance(gridPosition, unit.currentPos) <= closestDistanceToUnit)
+                    if (Vector2.Distance(gridPosition, startPosition) <= closestDistanceToUnit)
                     {
                         // Make that grid position the new best
-                        closestDistanceToUnit = Vector2.Distance(gridPosition, unit.currentPos);
+                        closestDistanceToUnit = Vector2.Distance(gridPosition, startPosition);
                         bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
                         newSpawnPosition = new Vector2(x, y);
-                        Debug.Log($"{newSpawnPosition} is now the new best position");
+                        // Debug.Log($"{newSpawnPosition} is now the new best position");
                     }
                 }
             }
@@ -245,7 +249,7 @@ public class PathFinder : MonoBehaviour
 
     public static List<GameObject> GetUnitsInArea(Vector2Int startPosition, Vector2Int endPosition, List<GameObject> teamUnits)
     {
-        // Get all of the BaseUnit Components in the passed units
+        // Get all the BaseUnit Components in the parsed units list
         List<BaseUnit> units = new();
         foreach (GameObject unit in teamUnits)
         {
@@ -350,10 +354,10 @@ public class PathFinder : MonoBehaviour
 
     private void printPath(List<Node> path)
     {
-        Debug.Log("Path retracing");
+        // Debug.Log("Path retracing");
         for (int i = 0; i < path.Count - 1; i++)
         {
-            Debug.Log($"Retraced node position {path[i].nodePosition}");
+            // Debug.Log($"Retraced node position {path[i].nodePosition}");
         }
     }
 
