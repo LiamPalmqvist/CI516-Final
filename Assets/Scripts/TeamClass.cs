@@ -1,12 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-
 
 /// <summary>
 /// Class <c>TeamClass</c> models a Team in the game
@@ -30,6 +25,8 @@ public class TeamClass : MonoBehaviour
     public GameObject[] buildingPrefabs;
     public bool ableToSpawn;
     public int resources = 100;
+    public int teamHealth = 100;
+    public bool teamActive = true;
     
     [SerializeField] SceneController sceneController;            // Controls which units are in what places 
     [SerializeField] private List<GameObject> inactiveUnits;     // All units will be initially assigned to this list until activated
@@ -43,7 +40,7 @@ public class TeamClass : MonoBehaviour
     
     // This is called when the class is instantiated
     private void Start()
-    {     
+    {
         // Grab the sceneController
         sceneController = GameObject.Find("SceneController").GetComponent<SceneController>();
 
@@ -71,10 +68,11 @@ public class TeamClass : MonoBehaviour
         
         Debug.Log($"Team Number: {teamNumber}, inactiveUnits: {inactiveUnits.Count}");
 
-        //for (int i = 0; i < maxUnitCount; i++)
-        //{
-            //SpawnUnit();
-        //}
+        // SpawnUnit();
+        // StartCoroutine(CountDown(5));
+
+        teamHealth = 100;
+        teamActive = true;
         
         //sceneController.PrintUnitPositions();
         
@@ -83,6 +81,17 @@ public class TeamClass : MonoBehaviour
 
     void Update()
     {
+        // Check if the team has any available units left
+        if (!teamActive) return;
+
+        if (activeUnits.Count <= 0 && resources < 100 || teamHealth <= 0)
+        {
+            Debug.Log($"Team {teamColour} is inactive. Team {teamColour} Health: {teamHealth}, Units Remaining: {activeUnits.Count}, Resources: {resources}");
+            sceneController.inactiveTeams.Add(gameObject);
+            sceneController.activeTeams.Remove(gameObject);
+            teamActive = false;
+        }
+        
         if (!ableToSpawn || resources < 100) return;
 
         ableToSpawn = false;

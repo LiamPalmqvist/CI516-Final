@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using static Resource;
 using Random = System.Random;
@@ -12,7 +12,9 @@ using Random = System.Random;
 public class SceneController : MonoBehaviour
 {
     // Variables
-    public GameObject[,] Grid = new GameObject[100, 100]; 
+    public GameObject[,] Grid = new GameObject[100, 100];
+    public bool gameOver = false;
+    //public bool playersWin;
     // switch this to a GameObject[,]
     // Have empty fields be empty node Objects - blocks be Obstacle GameObjects
     // Maybe try to generate a mesh based on where empty spots are?
@@ -23,9 +25,11 @@ public class SceneController : MonoBehaviour
     [Header("Teams Data")]
     public GameObject teamPrefab;
     public List<GameObject> activeTeams = new();
+    public List<GameObject> inactiveTeams = new();
     public Color[] teamColors = { Color.red, Color.blue, Color.green, Color.yellow };
     public string[] teamColourNames = { "red", "blue", "green", "yellow" };
     public TeamClass playerTeam;
+    public GameObject playerUnitPrefab;
     
     [Header("Customisable Data")]
     public Vector2[] teamPositions =
@@ -49,9 +53,6 @@ public class SceneController : MonoBehaviour
     public List<GameObject> inactiveResources = new();
     public bool canSpawnResource = true;
     
-    // Map elements from Maps.cs
-    Maps maps;
-    
     [Header("Selection tools")]
     private Camera playerCamera;
     public GameObject spinnerPrefab;
@@ -63,7 +64,9 @@ public class SceneController : MonoBehaviour
     private List<GameObject> selectedUnits = new();
     
     // UI
-    TMP_Text _text;
+    [FormerlySerializedAs("endPanel")] public Canvas endCanvas;
+    public TMP_Text endText;
+    
 
 
     // Start is called before the first frame update
@@ -71,34 +74,54 @@ public class SceneController : MonoBehaviour
     {
         // Set the player's camera so that rayCasts work
         playerCamera = Camera.main;
-        
+
         // Import maps from txt files
         // Map files will be x amount of characters long with defined width and height
         // of 100
-        maps = GetComponent<Maps>();
 
         // int[][] map1 = GenerateMap();
-        SpawnFromMap(maps.map2);
-        // SpawnFromMap(map1);
-        
-        _text = GameObject.Find("Canvas").GetComponentInChildren<TMP_Text>();  
+        if (SceneInformation.currentMap == null)
+        {
+            SpawnFromMap(Maps.map2);
+            SceneInformation.currentMap = Maps.map2;
+        }
+        else
+        {
+            SpawnFromMap(SceneInformation.currentMap);
+        }
     }
 
     void FixedUpdate()
     {
-        GetPlayerMousePosition();
+        if (gameOver) return;
 
+        if (inactiveTeams.Count >= 3 || inactiveTeams.Contains(playerTeam.gameObject))
+        {
+            Debug.Log($"{activeTeams[0].name} is the winner");
+            
+            if (inactiveTeams.Contains(playerTeam.gameObject))
+                ShowLoseScreen();
+            else
+                ShowWinScreen();
+            
+            gameOver = true;
+            return;
+        }
+        
+        
+        GetPlayerMousePosition();
         
         if (!canSpawnResource) return;
         
         canSpawnResource = false;
         SpawnResource();
         StartCoroutine(CountDown(5));
+
     }
 
     // This takes an array of arrays of integers and creates a map
     // using the "width" and "height" of the arrays to get the dimensions
-    void SpawnFromMap(int[][] mapArray)
+    public void SpawnFromMap(int[][] mapArray)
     {
         // setup vars
         int height = mapArray.Length;
@@ -147,6 +170,11 @@ public class SceneController : MonoBehaviour
                         teamClass.teamColour = teamColors[teamNumber];
                         teamClass.teamNumber = teamNumber;
                         teamClass.teamName = team.name;
+                        if (teamNumber == 0)
+                        {
+                            teamClass.unitPrefab = playerUnitPrefab;
+                            playerTeam = team.GetComponent<TeamClass>();
+                        }
                         
                         activeTeams.Add(team);
                         Grid[y, x] = team;
@@ -173,8 +201,6 @@ public class SceneController : MonoBehaviour
             GameObject resource = Instantiate(resourcePrefab, new Vector3(0 + i, 1, -1 - 4), Quaternion.identity);
             inactiveResources.Add(resource);
         }
-        
-        playerTeam = activeTeams[0].GetComponent<TeamClass>();
         
         spinner = Instantiate(spinnerPrefab, Vector3.zero, Quaternion.identity);
         activeSpinner = Instantiate(activeSpinnerPrefab, Vector3.zero, Quaternion.identity);
@@ -342,7 +368,23 @@ public class SceneController : MonoBehaviour
     //         _text.text += "\n";
     //     }
     // }
-    
+
+    private void ShowWinScreen()
+    {
+        endCanvas.enabled = true;
+        GameObject endPanel = endCanvas.transform.GetChild(0).gameObject;
+        endPanel.GetComponent<Image>().color = Color.green;
+        endText.text = "You win!";
+    }
+
+    private void ShowLoseScreen()
+    {
+        endCanvas.enabled = true;
+        GameObject endPanel = endCanvas.transform.GetChild(0).gameObject;
+        endPanel.GetComponent<Image>().color = Color.red;
+        endText.text = "You lose!";
+    }
+
 
     
     // Not in use at the moment, used for generating random maps
