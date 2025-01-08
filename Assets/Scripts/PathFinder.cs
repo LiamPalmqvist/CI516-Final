@@ -40,12 +40,15 @@ public class PathFinder : MonoBehaviour
     // This assumes that the coordinates ARE flipped from (X, Y) to (Y, X)
     public List<Node> CalculatePath(Vector2 start, Vector2 target, GameObject[,] grid)
     {
+        if (start == target)
+            return new List<Node>();
+        
         Clear();
         
         // Debug.Log("Hello!");
 
-        Debug.Log($"{start} to {target}");
-        
+        //Debug.Log($"{start} to {target}");
+        //Debug.Log($"{target} is {CheckValidSpace(target, grid)}");
         startPosition = start;
         endPosition = target;
         int iterations = 0;
@@ -74,7 +77,7 @@ public class PathFinder : MonoBehaviour
 
                 if (currentNode.nodePosition == endPosition)
                 {
-                    Debug.Log($"PATH FOUND AT {endPosition}");
+                    // Debug.Log($"PATH FOUND AT {endPosition}");
                     // Path found
                     Node pathNode = currentNode;
                     path = Retrace(pathNode);
@@ -88,7 +91,7 @@ public class PathFinder : MonoBehaviour
         }
         else
         {
-            Debug.Log("Not a valid space");
+            // Debug.Log("Not a valid space");
         }
         
         //Debug.Log($"Iterations: {iterations}");
@@ -191,7 +194,7 @@ public class PathFinder : MonoBehaviour
             for (int x = (int)spawnPosition.y-radius; x < (int)spawnPosition.y+radius; x++)
             {
                 Vector2 gridPosition = new Vector2(y, x);
-                Debug.Log(gridPosition);
+                // Debug.Log(gridPosition);
                 
                 // if the grid position IS FILLED, continue to next loop
                 try

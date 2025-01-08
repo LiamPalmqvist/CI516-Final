@@ -66,7 +66,7 @@ public class TeamClass : MonoBehaviour
             inactiveUnits.Add(unit);
         }
         
-        Debug.Log($"Team Number: {teamNumber}, inactiveUnits: {inactiveUnits.Count}");
+        // Debug.Log($"Team Number: {teamNumber}, inactiveUnits: {inactiveUnits.Count}");
 
         // SpawnUnit();
         // StartCoroutine(CountDown(5));
@@ -86,7 +86,7 @@ public class TeamClass : MonoBehaviour
 
         if (activeUnits.Count <= 0 && resources < 100 || teamHealth <= 0)
         {
-            Debug.Log($"Team {teamColour} is inactive. Team {teamColour} Health: {teamHealth}, Units Remaining: {activeUnits.Count}, Resources: {resources}");
+            // Debug.Log($"Team {teamColour} is inactive. Team {teamColour} Health: {teamHealth}, Units Remaining: {activeUnits.Count}, Resources: {resources}");
             sceneController.inactiveTeams.Add(gameObject);
             sceneController.activeTeams.Remove(gameObject);
             teamActive = false;
@@ -141,12 +141,12 @@ public class TeamClass : MonoBehaviour
             GameObject unit = inactiveUnits[0];
             unit.GetComponent<BaseUnit>().Respawn(); // This will set the default values for this unit
             
-            Debug.Log($"Spawn Coords: {spawnCoords}");
+            // Debug.Log($"Spawn Coords: {spawnCoords}");
             try
             {
                 Vector3 position = sceneController.FindOpenPosition(0, spawnCoords, spawnRadius, unit);
                 unit.transform.position = new Vector3(position.x, 1, position.z);
-                Debug.Log($"Position {position}");
+                // Debug.Log($"Position {position}");
                 BaseUnit unitScript = unit.GetComponent<BaseUnit>();
                 unitScript.currentPos = new Vector2(unit.transform.position.z, unit.transform.position.x);
                 unitScript.SetMaxHealth(100);
@@ -158,16 +158,16 @@ public class TeamClass : MonoBehaviour
             {
                 Debug.LogError(e);
             } 
-            Debug.Log(unit.transform.position);
+            // Debug.Log(unit.transform.position);
             
         }
         else
         {
-            Debug.Log("No units spawned");
+            // Debug.Log("No units spawned");
         }
     }
 
-    public IEnumerator CountDown(int amount)
+    private IEnumerator CountDown(int amount)
     {
         yield return new WaitForSeconds(amount);
         

@@ -97,7 +97,7 @@ public class SceneController : MonoBehaviour
 
         if (inactiveTeams.Count >= 3 || inactiveTeams.Contains(playerTeam.gameObject))
         {
-            Debug.Log($"{activeTeams[0].name} is the winner");
+            //Debug.Log($"{activeTeams[0].name} is the winner");
             
             if (inactiveTeams.Contains(playerTeam.gameObject))
                 ShowLoseScreen();
@@ -155,13 +155,6 @@ public class SceneController : MonoBehaviour
                         Grid[y, x] = obstacle;
                         break;
                     
-                    // case 1:
-                    //     Grid[y, x] = Instantiate(emptyObstacle);
-                    //     Grid[y, x].name = "EmptyNode";
-                    //     Grid[y, x].transform.position = new Vector3(x, 1f, y);
-                    //     gridInt[y, x] = 1;
-                    //     break;
-                    
                     case 2:
                         GameObject team = Instantiate(teamPrefab);
                         team.name = $"{teamColourNames[teamNumber]}";
@@ -192,7 +185,6 @@ public class SceneController : MonoBehaviour
                         resourcesSpawned++;
                         break;
                 }
-                //Grid[y, x] = mapArray[y][x];
             }
         }
         
@@ -207,19 +199,6 @@ public class SceneController : MonoBehaviour
         spinnerControl = spinner.GetComponent<SpinnerControl>();
         activeSpinnerControl = activeSpinner.GetComponent<SpinnerControl>();
         activeSpinner.SetActive(false);
-
-        /*
-        Debug.Log(activeTeams.Count);
-        for (int i = 0; i < activeTeams.Count; i++ )
-        {
-            TeamClass teamClass = activeTeams[i].GetComponent<TeamClass>();
-            for (int j = 0; j < teamClass.maxUnitCount; j++)
-            {
-                teamClass.SpawnUnit();
-                Debug.Log($"Spawning {i}'s team {j}");
-            }
-        }
-        */
     }
 
     // Generates a random position within a radius of a set of spawn coordinates
@@ -248,12 +227,12 @@ public class SceneController : MonoBehaviour
         if (!Grid[newZ, newX])
         {
             Grid[newZ, newX] = insertedObject;
-            Debug.Log($"Set {newZ}, {newX} to {insertedObject.name}");
+            // Debug.Log($"Set {newZ}, {newX} to {insertedObject.name}");
         }
         // Otherwise reiterate
         else
         {
-            Debug.Log($"Position {newPos} full, iteration {iteration}");
+            // Debug.Log($"Position {newPos} full, iteration {iteration}");
             newPos = FindOpenPosition(iteration + 1, spawnCoords, spawnRadius, insertedObject);
         }
 
@@ -263,7 +242,6 @@ public class SceneController : MonoBehaviour
 
     private void GetPlayerMousePosition()
     {
-       
         // Create the raycast from the camera to the mouse's position in the world
         Ray rayCamToMousePosition = playerCamera.ScreenPointToRay(Input.mousePosition);
 
@@ -277,58 +255,154 @@ public class SceneController : MonoBehaviour
             // Set the start position of drawing the selector
             // and set active
 
-            /* TODO: Allow for multiple selection via drag.
-             * TODO: Also show a rectangle of size start.xy, end.xy
+            /*
+             * TODO: Show a rectangle of size start.xy, end.xy
+             * TODO: Allow for formations by getting the size of the array - if more than 1, use array formation
              */
-            if (Input.GetMouseButtonDown(1))
+
+            // if the amount of selected units is less than or equal to 0, let the user select them
+            if (selectedUnits.Count <= 0)
             {
-                foreach (GameObject unit in selectedUnits)
+                
+                if (Input.GetMouseButtonDown(0)) // 1
                 {
-                    unit.transform.GetChild(0).gameObject.SetActive(false);
-                }
-                activeSpinner.SetActive(true);
-                activeSpinner.transform.position = rayHit.point;
-                selectedUnits = new List<GameObject>();
-            } 
-            else if (Input.GetMouseButton(1))
-            {
-                Debug.Log("Mouse button held");
-                
-                // Create variables for vectors which translate the positions to 2D Vectors
-                Vector2 startPos = new Vector2(spinner.transform.position.z, spinner.transform.position.x);
-                Vector2 endPos = new Vector2(activeSpinner.transform.position.z, activeSpinner.transform.position.x);
-                
-                // Get the selected units from the static GetUnitsInArea function in PathFinder
-                selectedUnits = PathFinder.GetUnitsInArea(new Vector2Int((int)startPos.x, (int)startPos.y), new Vector2Int((int)endPos.x, (int)endPos.y), playerTeam.activeUnits);
-                
-                Debug.Log(selectedUnits.Count);
-                foreach (GameObject unit in selectedUnits)
+                    foreach (GameObject unit in selectedUnits)
+                    {
+                        unit.transform.GetChild(0).gameObject.SetActive(false);
+                    }
+                    activeSpinner.SetActive(true);
+                    activeSpinner.transform.position = rayHit.point;
+                    selectedUnits = new List<GameObject>();
+                } 
+                else if (Input.GetMouseButton(0)) // 1
                 {
-                    unit.transform.GetChild(0).gameObject.SetActive(true);
+                    // Debug.Log("Mouse button held");
+                    
+                    // Create variables for vectors which translate the positions to 2D Vectors
+                    Vector2 startPos = new Vector2(spinner.transform.position.z, spinner.transform.position.x);
+                    Vector2 endPos = new Vector2(activeSpinner.transform.position.z, activeSpinner.transform.position.x);
+                    
+                    // Get the selected units from the static GetUnitsInArea function in PathFinder
+                    selectedUnits = PathFinder.GetUnitsInArea(new Vector2Int((int)startPos.x, (int)startPos.y), new Vector2Int((int)endPos.x, (int)endPos.y), playerTeam.activeUnits);
+                    
+                    // Debug.Log(selectedUnits.Count);
+                    foreach (GameObject unit in selectedUnits)
+                    {
+                        unit.transform.GetChild(0).gameObject.SetActive(true);
+                    }
                 }
-            }
-            else if (Input.GetMouseButtonUp(1))
-            {
-                activeSpinner.SetActive(false);
-                // foreach (GameObject unit in selectedUnits)
-                // {
-                //     unit.transform.GetChild(0).gameObject.SetActive(false);
-                // }
+                else if (Input.GetMouseButtonUp(0)) // 1
+                {
+                    activeSpinner.SetActive(false);
+                    // foreach (GameObject unit in selectedUnits)
+                    // {
+                    //     unit.transform.GetChild(0).gameObject.SetActive(false);
+                    // }
+                }
             }
 
-            // if the amount of selected units is less than or equal to 0, return
-            if (!Input.GetMouseButtonDown(0)) return;
-            if (selectedUnits.Count <= 0) return;
-            // if the left mouse button is pressed
-            if (!PathFinder.CheckValidSpace(new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid)) { Debug.Log("Invalid"); return;}
-            // if the space the player clicked is not valid, return
-            foreach (var baseUnit in selectedUnits.Select(unit => unit.GetComponent<BaseUnit>()))
+            // if the amount of selected units is more than 0, allow the user to position them or get rid of them
+            if (Input.GetMouseButtonDown(0))
             {
-                Debug.Log("Starting navigation to selected space");
-                baseUnit.targetPos = new Vector2((int)hitPoint.z, (int)hitPoint.x);
-                baseUnit.transform.GetChild(0).gameObject.SetActive(false);
+                // if the left mouse button is pressed
+                if (!PathFinder.CheckValidSpace(new Vector2((int)hitPoint.z, (int)hitPoint.x), Grid)) return;
+                // if the space the player clicked is not valid, return
+                if (selectedUnits.Count < 1)
+                {
+                    SetUnitTraversalPositions(selectedUnits, new Vector2((int)hitPoint.z, (int)hitPoint.x));
+                }
+                else
+                {
+                    selectedUnits[0].GetComponent<BaseUnit>().targetPos = new Vector2((int)hitPoint.z, (int)hitPoint.x);
+                }
+                selectedUnits = ClearUnits(selectedUnits);
             }
-            selectedUnits.Clear();
+            // if mouse 1 is pressed, clear the array of selected units
+            else if (Input.GetMouseButtonDown(1))
+            {
+                selectedUnits = ClearUnits(selectedUnits);
+            }
+        }
+    }
+
+    private List<GameObject> ClearUnits(List<GameObject> units)
+    {
+        foreach (var baseUnit in units.Select(unit => unit.GetComponent<BaseUnit>()))
+        {
+            baseUnit.transform.GetChild(0).gameObject.SetActive(false);
+        }
+        
+        activeSpinner.SetActive(false);
+
+        return new List<GameObject>();
+    }
+
+    private void SetUnitTraversalPositions(List<GameObject> units, Vector2 targetPosition)
+    {
+        switch (units.Count)
+        {
+            case 2:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y);
+                break;
+            case 3:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                break;
+            case 4:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x, targetPosition.y - 1);
+                units[3].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                break;
+            case 5:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                units[3].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y + 1);
+                units[4].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y + 1);
+                break;
+            case 6:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                units[0].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x, targetPosition.y + 1);
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y + 1);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y + 1);
+                break;
+            case 7:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y);
+                units[3].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[4].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                units[5].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 2);
+                units[6].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 2);
+                break;
+            case 8:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y);
+                units[3].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[4].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x, targetPosition.y - 1);
+                units[5].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                units[6].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 2);
+                units[7].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 2);
+                break;
+            case 9:
+                units[0].GetComponent<BaseUnit>().targetPos = targetPosition;
+                units[1].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y);
+                units[2].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y);
+                units[3].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 1);
+                units[4].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x, targetPosition.y - 1);
+                units[5].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 1);
+                units[6].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x + 1, targetPosition.y - 2);
+                units[7].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x - 1, targetPosition.y - 2);
+                units[8].GetComponent<BaseUnit>().targetPos = new Vector2(targetPosition.x, targetPosition.y - 2);
+                break;
+            default:
+                break;
         }
     }
 

@@ -6,10 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.ProBuilder.MeshOperations;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using Utils;
 using ArgumentNullException = System.ArgumentNullException;
@@ -37,20 +39,21 @@ public class BaseUnit : MonoBehaviour
     [SerializeField] SceneController sceneController; // Controls which units are in what places
     [SerializeField] public TeamClass team;
     
-    [SerializeField] int currentHealth = 100;
+    [SerializeField] int currentHealth;
     [SerializeField] int currentAmmo;
 
     [SerializeField] int currentTeamNumber;
     [SerializeField] private Vector2 spawnCoords;
     [SerializeField] private int spawnRadius;
     [SerializeField] private int seeRadius;
-    public Vector2 currentPos;
-    public Vector2 targetPos;
-    public bool moving = false;
-    public bool fleeing = false;
     
     // ========================================================================================
 
+    public Vector2 currentPos;
+    public Vector2 targetPos;
+    public Vector3 actualTargetPos;
+    public bool moving = false;
+    public bool fleeing = false;
     public PathFinder pathFinder;
     private List<Node> Path = new();
     public bool findingPath = false;
@@ -64,6 +67,13 @@ public class BaseUnit : MonoBehaviour
     
     // ========================================================================================
     
+    // Entity enemies
+    public List<GameObject> enemies = new();
+    private bool ableToShoot = true;
+    public GameObject projectilePrefab;
+
+    // ========================================================================================
+
     // TODO: Make unit collision script with Bullets from other units
     
     // Start is called before the first frame update
@@ -101,7 +111,7 @@ public class BaseUnit : MonoBehaviour
                 Flee();
                 break;
             case UnitStates.Attack:
-                //Attack();
+                Attack();
                 break;
             case UnitStates.Gather:
                 Gather();
@@ -114,61 +124,6 @@ public class BaseUnit : MonoBehaviour
 
     private void ControlStates()
     {
-        /*
-        // If the path count is greater than zero, set state to pathfind
-        try
-        {
-            if (Path.Count > 0)
-            {
-                state = UnitStates.Pathfinding;
-                return;
-            }
-            else
-            {
-                state = UnitStates.Roam;
-            }
-            // Debug.Log(Path.Count);
-        }
-        catch (InvalidOperationException)
-        {
-            Debug.Log("Node path is now empty");
-        }
-        
-        nearestResource = null;
-        
-        foreach (Resource resourceUnit in sceneController.activeResources.Select(resource => resource.GetComponent<Resource>()))
-        {
-            if (Vector2.Distance(resourceUnit.currentPosition, currentPos) <= seeRadius)
-            {
-                nearestResource = resourceUnit;
-            }
-        }
-
-        if (Vector2.Distance(currentPos, new Vector2(spawnCoords.y, spawnCoords.x)) <= team.spawnRadius)
-        {
-            if (currentHealth < maxHealth)
-            {
-                Heal(1);
-                return;
-            }
-        
-            fleeing = false;
-        }
-
-        if (findingPath)
-        {
-            state = UnitStates.Idle;
-        }
-        
-        // if the current health is below 30% of the max health, flee
-        // can't have Path.Count == 0 because fleeing should occur regardless
-        if (nearestResource && currentResources < maxResources)
-        {
-            state = UnitStates.Gathering;
-            gathering = true;
-        }
-        */
-        
         // if the health is equal to or below zero then kill the unit
         if (currentHealth <= 0)
         {
@@ -179,11 +134,14 @@ public class BaseUnit : MonoBehaviour
         // Set initial state and nearest resource to null
         nearestResource = null;
 
+        // set initial target node to current position if the target position is (0,0)
+        if (targetPos == Vector2.zero) targetPos = currentPos;
+        
         // We don't want the unit to do anything while it is path finding
         if (findingPath) return;
         
         // if there isn't anything to do, the unit will stay idle
-        state = UnitStates.Idle;
+        state = UnitStates.Roam;
         
         // Check if there is a resource nearby,
         // this also sets the gathering variable to true if within the gathering distance
@@ -265,12 +223,12 @@ public class BaseUnit : MonoBehaviour
 
     private void PathFind()
     {
-        Debug.Log("Pathfinding started");
+        // Debug.Log("Pathfinding started");
         if (targetPos == Vector2.zero) return;
         
         // This returns if the unit is still trying to find a path to targetPos
         if (findingPath) return;
-        Debug.Log("Finding path");
+        // Debug.Log("Finding path");
         // if the Path length is greater than 0 this means the unit is following a path
         if (Path.Count > 0)
         {
@@ -291,15 +249,57 @@ public class BaseUnit : MonoBehaviour
         // else, start finding the path
         else
         {
-            Debug.Log("Starting pathfinding");
+            // Debug.Log("Starting pathfinding");
             StartCoroutine(StartGetPath(currentPos, targetPos, sceneController.Grid));
             findingPath = true;
         }
     }
     
+    // Random position 1 away from unit in cardinal direcitons
+    
     private void Roam()
     {
-        // Node node;
+        List<Vector2> validPoints = new List<Vector2>();
+        
+        // List of points adjacent to the unit, not including unit's own position
+        Vector2[] points =
+        {
+            new(currentPos.x + 1, currentPos.y),
+            new(currentPos.x + 1, currentPos.y + 1),
+            new(currentPos.x + 1, currentPos.y - 1),
+            new(currentPos.x, currentPos.y + 1),
+            new(currentPos.x, currentPos.y - 1),
+            new(currentPos.x - 1, currentPos.y),
+            new(currentPos.x - 1, currentPos.y),
+            new(currentPos.x - 1, currentPos.y + 1),
+        };
+
+        foreach (Vector2 point in points)
+        {
+            if (PathFinder.CheckValidSpace(point, sceneController.Grid))
+            {
+                validPoints.Add(point);
+            }
+            /*
+            else
+            {
+                Debug.Log($"{point} is invalid to traverse to for team {team.teamColour}, {gameObject}");
+            }
+            */
+        }
+        
+        // Choose a random point from the valid points
+        try
+        {
+            targetPos = validPoints[new Random().Next(0, validPoints.Count)];
+        }
+        catch (Exception)
+        {
+            
+        }
+
+        // Original way the units used to path find randomly. Was limited by 
+        /*
         switch (new Random().Next(0, 4))
         {
             case 0:
@@ -331,6 +331,19 @@ public class BaseUnit : MonoBehaviour
                 // Debug.Log($"Team {team} roaming to node {node.nodePosition} from position {currentPos}");
                 break;
         }
+
+        if (SceneInformation.currentMap[(int)targetPos.y][(int)targetPos.x] == 1)
+        {
+            return;
+        }
+        Roam();
+
+        // if (PathFinder.CheckValidSpace(targetPos, sceneController.Grid))
+        // {
+        //     return;
+        // }
+        // Roam();
+        */
     }
 
     // The function that runs when the unit's state is set to "Flee"
@@ -395,6 +408,51 @@ public class BaseUnit : MonoBehaviour
         currentResources--;
     }
 
+    private void Attack()
+    {
+        // if health is low, flee
+        if (currentHealth <= maxHealth / 10 * 3) return;
+        
+        // if unable to shoot, try dodging by moving in a random direction
+        if (!ableToShoot) 
+        { 
+            Roam();
+            return;
+        }
+        
+        // Calculate the closest enemy with the lowest health
+        var closestEnemy = enemies[0];
+        var index = 0;
+        for (; index < enemies.Count; index++)
+        {
+            var enemy = enemies[index];
+            if (Vector3.Distance(transform.position, enemy.transform.position) > Vector3.Distance(transform.position, closestEnemy.transform.position) && 
+                enemy.GetComponent<BaseUnit>().currentHealth < closestEnemy.GetComponent<BaseUnit>().currentHealth
+            )
+            {
+                closestEnemy = enemy;
+            }
+        }
+    
+        ShootProjectile(closestEnemy.GetComponent<BaseUnit>());
+        ableToShoot = false;
+        StartCoroutine(CountDown(5));
+    }
+
+    private void ShootProjectile(BaseUnit enemy)
+    {
+        GameObject projectile = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+        projectile.GetComponent<Bullet>().parent = this;
+        projectile.transform.LookAt(enemy.transform.position);
+    }
+    
+    private IEnumerator CountDown(int amount)
+    {
+        yield return new WaitForSeconds(amount);
+        
+        ableToShoot = true;
+    }
+
     /*
     // Runs in a random direction until it hits something
     private void Roam()
@@ -448,7 +506,7 @@ public class BaseUnit : MonoBehaviour
     {
         currentResources += nearestResource.depletionRate;
         nearestResource.resourcesHeld -= nearestResource.depletionRate;
-        Debug.Log(nearestResource.resourcesHeld);
+        // Debug.Log(nearestResource.resourcesHeld);
     }
     
     private void GetDistance()
@@ -456,6 +514,7 @@ public class BaseUnit : MonoBehaviour
         // if the current and next positions are within 0.1f of each other
         if (Vector3.Distance(transform.position, new Vector3(Path[0].nodePosition.y, 1f, Path[0].nodePosition.x)) <= 0.1f)
         {
+            // Make a new variable
             // set moving to false
             moving = false;
             // make the unit's actual position the new position
@@ -465,6 +524,7 @@ public class BaseUnit : MonoBehaviour
         }
         else
         {
+            transform.LookAt(new Vector3(Path[0].nodePosition.y, 1f, Path[0].nodePosition.x));
             transform.position = Vector3.MoveTowards(
                 transform.position,
                 new Vector3(currentPos.y, 1f, currentPos.x), 
@@ -506,7 +566,7 @@ public class BaseUnit : MonoBehaviour
         
         Path = t.Result;
         findingPath = false;
-        Debug.Log($"Nodes in list: {t.Result.Count}");
+        // Debug.Log($"Nodes in list: {t.Result.Count}");
         // Debug.Log("Task finished");
         yield return null;
     }
@@ -531,6 +591,24 @@ public class BaseUnit : MonoBehaviour
     {
         maxHealth = health;
         currentHealth = maxHealth;
+    }
+
+    private void OnTriggerEnter(Collider collides)
+    {
+        // test if the other unit has a component of BaseUnit
+        if (!collides.gameObject.TryGetComponent<BaseUnit>(out var unit)) return;
+        if (unit.team == team) return;
+        if (unit.currentHealth <= 0) return;
+        enemies.Add(unit.gameObject);
+    }
+
+    private void OnTriggerExit(Collider collides)
+    {
+        // test if the other unit has a component of BaseUnit
+        if (!collides.gameObject.TryGetComponent<BaseUnit>(out var unit)) return;
+        if (unit.team == team) return;
+        if (unit.currentHealth <= 0) return;
+        enemies.Remove(unit.gameObject);
     }
 }
 
