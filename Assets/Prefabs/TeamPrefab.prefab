@@ -347,7 +347,7 @@ MonoBehaviour:
   maxUnitCount: 10
   spawnCoords: {x: 25, y: 54}
   spawnRadius: 5
-  unitPrefab: {fileID: 462143108753143858, guid: 946d4c839242f4a889e7c1481b9f1250, type: 3}
+  unitPrefab: {fileID: 2905134427663284580, guid: dbeef0c6dfe004fa8a8db2a33f630be3, type: 3}
   buildingPrefabs: []
   ableToSpawn: 0
   resources: 100

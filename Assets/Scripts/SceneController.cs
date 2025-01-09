@@ -13,7 +13,7 @@ public class SceneController : MonoBehaviour
 {
     // Variables
     public GameObject[,] Grid = new GameObject[100, 100];
-    public bool gameOver = false;
+    public bool gameOver;
     //public bool playersWin;
     // switch this to a GameObject[,]
     // Have empty fields be empty node Objects - blocks be Obstacle GameObjects
@@ -121,7 +121,7 @@ public class SceneController : MonoBehaviour
 
     // This takes an array of arrays of integers and creates a map
     // using the "width" and "height" of the arrays to get the dimensions
-    public void SpawnFromMap(int[][] mapArray)
+    private void SpawnFromMap(int[][] mapArray)
     {
         // setup vars
         int height = mapArray.Length;

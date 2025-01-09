@@ -1,20 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
-using Unity.Mathematics;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.ProBuilder.MeshOperations;
-using UnityEngine.SceneManagement;
-using UnityEngine.UIElements;
-using Utils;
-using ArgumentNullException = System.ArgumentNullException;
 using Random = System.Random;
 
 public class BaseUnit : MonoBehaviour
@@ -29,23 +18,19 @@ public class BaseUnit : MonoBehaviour
         Gather,
         Deposit
     }
+
+    public UnitInformation unitInformation;
     
     public int maxHealth = 100;
     public int maxAmmo = 100;
     public float moveSpeed = 10f;
-    public int teamNumber;
     public UnitStates state = UnitStates.Idle;
     
     [SerializeField] SceneController sceneController; // Controls which units are in what places
-    [SerializeField] public TeamClass team;
     
     [SerializeField] int currentHealth;
     [SerializeField] int currentAmmo;
 
-    [SerializeField] int currentTeamNumber;
-    [SerializeField] private Vector2 spawnCoords;
-    [SerializeField] private int spawnRadius;
-    [SerializeField] private int seeRadius;
     
     // ========================================================================================
 
@@ -54,6 +39,7 @@ public class BaseUnit : MonoBehaviour
     public Vector3 actualTargetPos;
     public bool moving = false;
     public bool fleeing = false;
+    public bool checkingCoords;
     public PathFinder pathFinder;
     private List<Node> Path = new();
     public bool findingPath = false;
@@ -75,26 +61,37 @@ public class BaseUnit : MonoBehaviour
     // ========================================================================================
 
     // TODO: Make unit collision script with Bullets from other units
-    
-    // Start is called before the first frame update
-    void Start() {
+
+    // Awake is called when the script is initialised whether it is enabled or not
+    // It is called even if the script is disabled
+    void Awake()
+    {
         // https://docs.unity3d.com/6000.0/Documentation/ScriptReference/GameObject.Find.html
         sceneController = GameObject.Find("SceneController").GetComponent<SceneController>();
         pathFinder = GetComponent<PathFinder>();
-        spawnCoords = team.spawnCoords;
-        spawnRadius = team.spawnRadius;
-        teamNumber = team.teamNumber;
-        targetPos = currentPos;
-        
+        unitInformation = GetComponent<UnitInformation>();
         // Round the positions to place them on the map properly
         // https://www.techiedelight.com/round-float-to-2-decimal-points-csharp/
         // Decimal newX = Decimal.Round((decimal)transform.position.x, 0);
         // Decimal newZ = Decimal.Round((decimal)transform.position.z, 0);
     }
+    
+    // Called when the unit script is enabled
+    void OnEnable() {
+        currentHealth = maxHealth;
+        targetPos = currentPos;
+    }
+
+    // Called when the unit script is disabled
+    void OnDisable()
+    {
+        
+    }
 
     // Update is called once per frame
     void Update()
     {
+        // STATE MACHINE
         ControlStates();
         
         switch (state)
@@ -122,12 +119,20 @@ public class BaseUnit : MonoBehaviour
         }
     }
 
+    // DECISION TREE
     private void ControlStates()
     {
         // if the health is equal to or below zero then kill the unit
         if (currentHealth <= 0)
         {
-            team.DisableUnit(gameObject);
+            unitInformation.Team.DisableUnit(gameObject);
+            return;
+        }
+        
+        // if the distance to the spawnCoords is less than the spawn radius and the current health is
+        if (Vector2.Distance(currentPos, new Vector2(unitInformation.SpawnCoords.y, unitInformation.SpawnCoords.x)) <= unitInformation.SpawnRadius && currentHealth < maxHealth)
+        {
+            Heal(1);
             return;
         }
         
@@ -203,7 +208,7 @@ public class BaseUnit : MonoBehaviour
             
             // if it is within the radius that the unit can see
             // and is a lesser distance than the previous ones
-            if (resourceDistance < closestResourceDistance && resourceDistance < seeRadius)
+            if (resourceDistance < closestResourceDistance && resourceDistance < unitInformation.SeeRadius)
             {
                 // make it the closest one in range
                 closestResourceDistance = resourceDistance;
@@ -223,6 +228,7 @@ public class BaseUnit : MonoBehaviour
 
     private void PathFind()
     {
+        if (currentPos != targetPos) checkingCoords = false;
         // Debug.Log("Pathfinding started");
         if (targetPos == Vector2.zero) return;
         
@@ -251,6 +257,7 @@ public class BaseUnit : MonoBehaviour
         {
             // Debug.Log("Starting pathfinding");
             StartCoroutine(StartGetPath(currentPos, targetPos, sceneController.Grid));
+            Debug.Log($"currentPos: {currentPos}, targetPos: {targetPos}, gridPos: {sceneController.Grid[(int)currentPos.y, (int)currentPos.x]}");
             findingPath = true;
         }
     }
@@ -349,11 +356,11 @@ public class BaseUnit : MonoBehaviour
     // The function that runs when the unit's state is set to "Flee"
     private void Flee()
     {
-        // if the distance to the spawnCoords is less than the spawn radius and the current health is
         // greater than or equal to the mex health OR the Path is not empty return
-        if (Vector2.Distance(currentPos, spawnCoords) <= spawnRadius && currentHealth >= maxHealth || Path.Count > 0) return;
+        if (Path.Count > 0) return;
         
-        Vector2 fleeCoords = PathFinder.CheckSpawnCoordinates(currentPos, spawnCoords, spawnRadius, sceneController.Grid);
+        Vector2 fleeCoords = PathFinder.FindOpenPosition(currentPos, unitInformation.SpawnCoords, unitInformation.SpawnRadius, true);
+        Debug.Log(PathFinder.CheckValidSpace(unitInformation.SpawnCoords + Vector2.down, sceneController.Grid));
         // if the flee coordinates aren't valid
         if (fleeCoords == Vector2.zero)
         {
@@ -362,7 +369,7 @@ public class BaseUnit : MonoBehaviour
         }
         else
         {
-            targetPos = fleeCoords;
+            targetPos = new Vector2(fleeCoords.y, fleeCoords.x);
         }
         
         // Otherwise
@@ -387,24 +394,36 @@ public class BaseUnit : MonoBehaviour
         }
         else
         {
-            Vector2 coordinate = PathFinder.CheckSpawnCoordinates(currentPos, new Vector2(nearestResource.currentPosition.y, nearestResource.currentPosition.x), nearestResource.gatherRange, sceneController.Grid);
+            Vector2 coordinate = PathFinder.FindOpenPosition(currentPos, nearestResource.currentPosition, nearestResource.gatherRange);
+            if (coordinate == Vector2.zero) return;
             targetPos = coordinate;
         }
     }
 
     private void Deposit()
     {
-        if (Vector2.Distance(currentPos, new Vector2(spawnCoords.y, spawnCoords.x)) <= spawnRadius)
+        if (Vector2.Distance(currentPos, new Vector2(unitInformation.SpawnCoords.y, unitInformation.SpawnCoords.x)) <= unitInformation.SpawnRadius)
         {
             DepositAtBase();
             return;
         }
-        targetPos = PathFinder.CheckSpawnCoordinates(currentPos, spawnCoords, spawnRadius, sceneController.Grid);
+
+        if (targetPos != currentPos)
+            checkingCoords = false;
+
+        // if the bot is checking for coordinates
+        if (checkingCoords) return;
+        
+        checkingCoords = true;
+        Debug.Log("Not at base");
+        Vector2 coordinate = PathFinder.FindOpenPosition(currentPos, unitInformation.SpawnCoords, unitInformation.SpawnRadius, true);
+        if (coordinate == Vector2.zero) return;
+        targetPos = new Vector2(coordinate.y, coordinate.x);;
     }
 
     private void DepositAtBase()
     {
-        team.resources++;
+        unitInformation.Team.resources++;
         currentResources--;
     }
 
@@ -556,7 +575,7 @@ public class BaseUnit : MonoBehaviour
         if (!t.IsCompletedSuccessfully)
         {
             // Debug.Log($"Failed to get path: {t.Exception}");
-            throw new Exception("Failed to get path");
+            throw new Exception($"Failed to get path from {startPos} to {endPos}. {grid[(int)startPos.x, (int)startPos.y]}");
         }
 
         if (!t.IsCompleted)
@@ -581,12 +600,6 @@ public class BaseUnit : MonoBehaviour
         currentHealth += healAmount;
     }
 
-    public void Respawn()
-    {
-        currentHealth = maxHealth;
-        currentAmmo = maxAmmo;
-    }
-
     public void SetMaxHealth(int health)
     {
         maxHealth = health;
@@ -595,18 +608,22 @@ public class BaseUnit : MonoBehaviour
 
     private void OnTriggerEnter(Collider collides)
     {
+        if (!enabled) return;
+    
         // test if the other unit has a component of BaseUnit
         if (!collides.gameObject.TryGetComponent<BaseUnit>(out var unit)) return;
-        if (unit.team == team) return;
+        if (unit.unitInformation.Team == unitInformation.Team) return;
         if (unit.currentHealth <= 0) return;
         enemies.Add(unit.gameObject);
     }
 
     private void OnTriggerExit(Collider collides)
     {
+        if (!enabled) return;
+        
         // test if the other unit has a component of BaseUnit
         if (!collides.gameObject.TryGetComponent<BaseUnit>(out var unit)) return;
-        if (unit.team == team) return;
+        if (unit.unitInformation.Team == unitInformation.Team) return;
         if (unit.currentHealth <= 0) return;
         enemies.Remove(unit.gameObject);
     }

@@ -12,11 +12,12 @@ GameObject:
   - component: {fileID: 3344043835406129430}
   - component: {fileID: 8897894927666848391}
   - component: {fileID: 4693138344060141166}
+  - component: {fileID: 3373299882354608147}
   - component: {fileID: 4740002591352790171}
   - component: {fileID: 2806767392767182107}
   - component: {fileID: 446703589529237857}
   - component: {fileID: -1959945876148304470}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: EntityPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -115,7 +116,7 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4740002591352790171
+--- !u!114 &3373299882354608147
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -124,27 +125,40 @@ MonoBehaviour:
   m_GameObject: {fileID: 2905134427663284580}
   m_Enabled: 1
   m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d5d218ff42549f4a425dc5760cf2e1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Team: {fileID: 0}
+  TeamNumber: 0
+  SpawnCoords: {x: 0, y: 0}
+  SpawnRadius: 0
+  SeeRadius: 10
+--- !u!114 &4740002591352790171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2905134427663284580}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b16a6ac0934a4d728bcc0920f6ef0b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitInformation: {fileID: 0}
   maxHealth: 100
   maxAmmo: 100
   moveSpeed: 10
-  teamNumber: 0
   state: 0
   sceneController: {fileID: 0}
-  team: {fileID: 0}
   currentHealth: 100
   currentAmmo: 0
-  currentTeamNumber: 0
-  spawnCoords: {x: 0, y: 0}
-  spawnRadius: 0
-  seeRadius: 10
   currentPos: {x: 0, y: 0}
   targetPos: {x: 0, y: 0}
   actualTargetPos: {x: 0, y: 0, z: 0}
   moving: 0
   fleeing: 0
+  checkingCoords: 0
   pathFinder: {fileID: 0}
   findingPath: 0
   currentResources: 0
@@ -152,6 +166,7 @@ MonoBehaviour:
   nearestResource: {fileID: 0}
   gathering: 0
   enemies: []
+  projectilePrefab: {fileID: 0}
 --- !u!114 &2806767392767182107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12725,7 +12740,7 @@ GameObject:
   - component: {fileID: 6395287318623906161}
   - component: {fileID: 7747492334039528481}
   - component: {fileID: 4272645262382874133}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: EntityPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}

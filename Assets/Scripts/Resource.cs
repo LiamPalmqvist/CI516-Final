@@ -38,6 +38,7 @@ public class Resource : MonoBehaviour
 
     private void DestroyResource()
     {
+        FindObjectOfType<SceneController>().Grid[(int)currentPosition.y, (int)currentPosition.x] = null;
         resourcesHeld = 0;
         resourceType = ResourceType.None;
         currentPosition = Vector2.zero;

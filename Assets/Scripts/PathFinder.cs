@@ -53,9 +53,10 @@ public class PathFinder : MonoBehaviour
         endPosition = target;
         int iterations = 0;
 
+        Node currentNode = new(start, target, null);
+        
         if (CheckValidSpace(target, grid))
         {
-            Node currentNode = new(start, target, null);
             closedSet.Add(currentNode);
             openSet.AddRange(GetNeighbours(currentNode, grid));
             // Create starting node, add to closedSet
@@ -86,6 +87,8 @@ public class PathFinder : MonoBehaviour
                 {
                     openSet.AddRange(GetNeighbours(currentNode, grid));
                 }
+                
+                Debug.Log($"Stopped at node position: {currentNode.nodePosition}");
             }
             
         }
@@ -95,6 +98,14 @@ public class PathFinder : MonoBehaviour
         }
         
         //Debug.Log($"Iterations: {iterations}");
+        if (path.Count > 0)
+        {
+            Debug.Log($"Found path from {startPosition} to {endPosition}");
+        }
+        else
+        {
+            Debug.Log($"No path from {startPosition} to {endPosition}. Stopped at node position: {currentNode.nodePosition} after {iterations} iteration(s)\n The position was {(CheckValidSpace(currentNode.nodePosition, grid) ? "open" : "closed")} because of {grid[(int)currentNode.nodePosition.y, (int)currentNode.nodePosition.x]}");
+        }
         printPath(path);
         return path;
     }
@@ -159,8 +170,10 @@ public class PathFinder : MonoBehaviour
         return neighbours;
     }
 
-    public static bool CheckValidSpace(Vector2 position, GameObject[,] grid)
+    public static bool CheckValidSpace(Vector2 position, GameObject[,] grid = null)
     {
+        grid ??= GameObject.Find("SceneController").GetComponent<SceneController>().Grid;
+        
         int xPos = (int)position.x;
         int zPos = (int)position.y;
         
@@ -181,75 +194,56 @@ public class PathFinder : MonoBehaviour
 
     // This assumes that the spawn coordinates are already flipped
     // from (X, Y) to (Y, X)
-    public static Vector2 CheckSpawnCoordinates(Vector2 startPosition, Vector2 spawnPosition, int radius, GameObject[,] grid)
+    public static Vector2 FindOpenPosition(Vector2 startPos, Vector2 endPos, int radius, bool hardLimit = false, GameObject[,] grid = null, int iteration = 0, List<Vector2> closedPositions = null)
     {
-        Vector2 newSpawnPosition = new Vector2(0, 0);
-        float bestDistanceToSpawn = Mathf.Infinity;
-        float closestDistanceToUnit = Mathf.Infinity;
+        // set if default values present - makes it unnecessary to pass as arguments initially
+        closedPositions ??= new List<Vector2>();
+        grid ??= GameObject.Find("SceneController").GetComponent<SceneController>().Grid;
         
-        // loop through vertically
-        for (int y = (int)spawnPosition.x-radius; y < (int)spawnPosition.x+radius; y++)
-        {
-            // loop through horizontally
-            for (int x = (int)spawnPosition.y-radius; x < (int)spawnPosition.y+radius; x++)
-            {
-                Vector2 gridPosition = new Vector2(y, x);
-                // Debug.Log(gridPosition);
-                
-                // if the grid position IS FILLED, continue to next loop
-                try
-                {
-                    if (grid[x, y])
-                    {
-                        // Debug.Log($"Grid position {gridPosition.x}, {gridPosition.y} filled");
-                        continue;
-                    }
-                }
-                // if the index is outside the range of the grid, i.e. (-1, 25)
-                // continue to the next loop
-                catch (IndexOutOfRangeException e)
-                {
-                    Debug.Log(e);
-                    continue;
-                }
-                
-                // if the new position IS the spawn position, continue to next loop
-                if (gridPosition == spawnPosition) continue;
+        // if the algorithm has hit the hard limit of iterations return zero.
+        // This will save the program from getting stuck
+        if (iteration > 5) return Vector2.zero;
+        
+        float closestDistanceToTarget = Mathf.Infinity;
+        Vector2 closestNodeToTarget = Vector2.positiveInfinity;
+        List<Vector2> openSet = new();
 
-                // Debug.Log($"{grid[x, y]} is free");
+        for (int x = (int)endPos.x - radius; x < (int)endPos.x + radius; x++)
+        {
+            for (int y = (int)endPos.y - radius; y < (int)endPos.y + radius; y++)
+            {
+                if (x == (int)endPos.x && y == (int)endPos.y) continue;
+                // This is reversed because we are passing in coords in [x, z]
+                // and the grid is in [z, x]
+                if (closedPositions.Contains(new Vector2(x, y))) continue;
                 
-                // if the distance from the current grid position to the spawn coords
-                // is LESS than the current best distance
-                if (Vector2.Distance(spawnPosition, gridPosition) < bestDistanceToSpawn)
+                if (CheckValidSpace(new Vector2(x, y), grid))
                 {
-                    // then the new best distance is the distance from the spawn position to the current
-                    // grid position
-                    bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
-                    newSpawnPosition = new Vector2(x, y);
-                    // Debug.Log($"{newSpawnPosition} is the new best position with distance of {bestDistanceToSpawn}");
-                
-                } 
-                // Otherwise if the distance is APPROXIMATELY THE SAME
-                else if (Mathf.Approximately(Vector2.Distance(spawnPosition, gridPosition), bestDistanceToSpawn))
+                    openSet.Add(new Vector2(x, y));
+                }
+                else
                 {
-                    // IF the distance from the current grid position is LESS than the current 
-                    // closest distance to the unit
-                    if (Vector2.Distance(gridPosition, startPosition) <= closestDistanceToUnit)
-                    {
-                        // Make that grid position the new best
-                        closestDistanceToUnit = Vector2.Distance(gridPosition, startPosition);
-                        bestDistanceToSpawn = Vector2.Distance(spawnPosition, gridPosition);
-                        newSpawnPosition = new Vector2(x, y);
-                        // Debug.Log($"{newSpawnPosition} is now the new best position");
-                    }
+                    closedPositions.Add(new Vector2(x, y));
                 }
             }
         }
         
-        // Finally, return the new position to travel to
-        return newSpawnPosition;
-    }
+        // if there are no available spots return Vector2.zero 
+        if (openSet.Count == 0 && !hardLimit) return FindOpenPosition(startPos, endPos, radius, false, grid, iteration+1, closedPositions);
+        
+        foreach (Vector2 pos in openSet)
+        {
+            if (!(Vector2.Distance(endPos, pos) < closestDistanceToTarget)) continue;
+            
+            closestDistanceToTarget = Vector2.Distance(endPos, pos);
+            closestNodeToTarget = pos;
+        }
 
+        Debug.Log($"Closest node was {closestDistanceToTarget} at position {closestNodeToTarget}");
+        
+        return closestNodeToTarget;
+    }
+    
     public static List<GameObject> GetUnitsInArea(Vector2Int startPosition, Vector2Int endPosition, List<GameObject> teamUnits)
     {
         // Get all the BaseUnit Components in the parsed units list
@@ -279,88 +273,13 @@ public class PathFinder : MonoBehaviour
         
         return selectedUnits;
     }
-    
-    // public static List<BaseUnit> GetUnitsInArea(Vector2Int startPosition, Vector2Int endPosition, GameObject[,] grid)
-    // {
-    //     Debug.Log($"Searching from {startPosition} to {endPosition}");
-    //     List<BaseUnit> units = new();
-    //     if (startPosition.x <= endPosition.x)
-    //         for (int x = startPosition.x; x < endPosition.x; x++)
-    //             if (startPosition.y <= endPosition.y)
-    //             {
-    //                 Debug.Log("Start X <= End X && Start Y <= End Y");
-    //                 for (int y = startPosition.y; y < endPosition.y; y++)
-    //                 {
-    //                     try
-    //                     {
-    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
-    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
-    //                     }
-    //                     catch (Exception e)
-    //                     {
-    //                         Debug.Log(e);
-    //                     }
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 Debug.Log("Start X <= End X && Start Y > End Y");
-    //                 for (int y = endPosition.y; y < startPosition.y; y++)
-    //                 {
-    //                     try
-    //                     {
-    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
-    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
-    //                     }
-    //                     catch (Exception e)
-    //                     {
-    //                         Debug.Log(e);
-    //                     }
-    //                 }
-    //             }
-    //     else
-    //         for (int x = endPosition.x; x < startPosition.x; x++)
-    //             if (startPosition.y <= endPosition.y)
-    //             {
-    //                 Debug.Log("Start X > End X && Start Y <= End Y");
-    //                 for (int y = startPosition.y; y < endPosition.y; y++)
-    //                 {
-    //                     try
-    //                     {
-    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
-    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
-    //                     }
-    //                     catch (Exception e)
-    //                     {
-    //                         Debug.Log(e);
-    //                     }
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 Debug.Log("Start X > End X && Start Y > End Y");
-    //                 for (int y = endPosition.y; y < startPosition.y; y++)
-    //                 {
-    //                     try
-    //                     {
-    //                         if (grid[x, y].name == "EntityPrefab(Clone)")
-    //                             units.Add(grid[y, x].GetComponent<BaseUnit>());
-    //                     }
-    //                     catch (Exception e)
-    //                     {
-    //                         Debug.Log(e);
-    //                     }
-    //                 }
-    //             }
-    //     return units;
-    // }
 
     private void printPath(List<Node> path)
     {
         // Debug.Log("Path retracing");
         for (int i = 0; i < path.Count - 1; i++)
         {
-            // Debug.Log($"Retraced node position {path[i].nodePosition}");
+            Debug.Log($"Retraced node position {path[i].nodePosition}");
         }
     }
 
